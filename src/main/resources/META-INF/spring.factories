@@ -1,0 +1,7 @@
+<configuration>
+<transformers>
+    <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+        <resource>META-INF/spring.factories</resource>
+    </transformer>
+</transformers>
+</configuration>
