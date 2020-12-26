@@ -125,8 +125,8 @@ public class SQLDatabaseConnection {
             e.printStackTrace();
         }
     }
-    public static String addKYC(KycDTO kyc) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        String fileHash = DSM.SHA256hex(kyc.getFile() + "." + DSM.generateSalt());
+    public static String addKYC(KycDTO kyc, String filePath) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+        String fileHash = DSM.SHA256hex(filePath + "." + DSM.generateSalt());
         String userPassword = getUserPassword(kyc.getEmail());
         SignatureDTO signature = DSM.sign(fileHash, userPassword);
         System.out.println(BIM.storeEventHash(fileHash, signature.getPK(), signature.getSignatureValue()));
@@ -139,7 +139,8 @@ public class SQLDatabaseConnection {
                 + "passport_id=\"" + kyc.getPassportID() + "\","
                 + "email=\"" + kyc.getEmail() + "\","
                 + "document_id=\"" + documentId + "\","
-                + "file_hash=\"" + fileHash + "\";";
+                + "file_hash=\"" + fileHash + "\","
+                + "file_path=\"" + filePath + "\";";
         try {
             System.out.println("Executing query: " + query);
             statement.executeUpdate(query);

@@ -7,17 +7,15 @@ public class KycDTO {
     private String lastName;
     private String passportID;
     private String email;
-    private String file;
 
     public KycDTO() {}
 
-    public KycDTO(String firstName, String middleName, String lastName, String passportID, String email, String fileHash) {
+    public KycDTO(String firstName, String middleName, String lastName, String passportID, String email) {
         this.firstName = firstName;
         this.middleName = middleName;
         this.lastName = lastName;
         this.passportID = passportID;
         this.email = email;
-        this.file = fileHash;
     }
 
     public String getFirstName() {
@@ -40,7 +38,4 @@ public class KycDTO {
         return email;
     }
 
-    public String getFile() {
-        return file;
-    }
 }
