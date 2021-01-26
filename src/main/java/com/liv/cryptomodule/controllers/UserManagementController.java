@@ -39,7 +39,7 @@ public class UserManagementController {
         SQLDatabaseConnection.createUser(user, signed.getMessageHash());
     }
     @PostMapping("/login")
-    public String login(@RequestBody UserLoginDTO user) {
+    public String login(@RequestBody UserLoginDTO user) throws IOException {
         return SQLDatabaseConnection.login(user);
     }
     @PostMapping("/verifyJWT")

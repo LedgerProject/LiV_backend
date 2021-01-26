@@ -16,7 +16,6 @@ import java.sql.SQLException;
 public class CryptoModuleApplication {
 
 	public static void main(String[] args) throws IOException, SQLException {
-		SQLDatabaseConnection.initialize();
 		SpringApplication.run(CryptoModuleApplication.class, args);
 	}
 
