@@ -61,4 +61,10 @@ public class UserManagementController {
         return new UploadFileResponse(fileName, fileDownloadUri,
                 file.getContentType(), file.getSize());
     }
+    @PostMapping("/signup-notary-registry")
+    public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) {
+        if (Integer.parseInt(user.getRoleId()) == 1) {
+            SQLDatabaseConnection.createNotary(user);
+        }
+    }
 }
