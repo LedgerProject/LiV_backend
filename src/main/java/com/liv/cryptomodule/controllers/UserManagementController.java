@@ -62,9 +62,11 @@ public class UserManagementController {
                 file.getContentType(), file.getSize());
     }
     @PostMapping("/signup-notary-registry")
-    public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) {
-        if (Integer.parseInt(user.getRoleId()) == 1) {
-            SQLDatabaseConnection.createNotary(user);
-        }
+    public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) throws IOException {
+        SQLDatabaseConnection.createNotaryRegistry(user);
+    }
+    @PostMapping("/login-notary-registry")
+    public String loginNotaryRegistry(@RequestBody NotaryRegistryLoginDTO user) throws IOException {
+        return SQLDatabaseConnection.notaryRegistryLogin(user);
     }
 }

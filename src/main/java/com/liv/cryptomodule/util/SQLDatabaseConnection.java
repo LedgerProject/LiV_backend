@@ -7,6 +7,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.InvalidRoleIdException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -15,7 +16,6 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -42,35 +42,68 @@ public class SQLDatabaseConnection {
 
     public static Connection connect() throws IOException {
         try {
-//            System.out.println("Getting ready to connect...");
             Class.forName("com.mysql.jdbc.Driver");
             return DriverManager.getConnection(prop.getProperty("dburl") + prop.getProperty("dbname"), prop.getProperty("dbusername"), prop.getProperty("dbpassword"));
-//            System.out.println("Database connection initialized!");
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
     }
+
+    private static Salt saltPassword(String password) {
+        BigInteger salt = DSM.generateSalt();
+        String saltedPassword = password + "." + salt;
+        String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
+        return new Salt(salt, saltedPasswordHash);
+    }
+
     public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException {
 
         loadProps();
 
-        BigInteger salt = DSM.generateSalt();
-        String saltedPassword = user.getPassword() + "." + salt;
-        String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
+        Salt salt = saltPassword(user.getPassword());
 
         String query = "INSERT INTO " + prop.getProperty("usertable") + " SET email=\"" + user.getEmail() + "\","
-                + "password_hash=\"" + saltedPasswordHash + "\","
-                + "salt=\"" + salt + "\","
+                + "password_hash=\"" + salt.getSaltedPassword() + "\","
+                + "salt=\"" + salt.getSalt() + "\","
                 + "did=\"" + did + "\";";
-        System.out.println("Executing query: " + query);
+        log.log(Level.INFO, "Executing query {0}", query);
+
+        sendRequestToDB(query);
+    }
+
+    public static void createNotaryRegistry(NotaryRegistryDTO user) throws IOException {
+        loadProps();
+        String table;
+        Salt salt = saltPassword(user.getPassword());
+
+        if (Integer.parseInt(user.getRoleId()) == 1) {
+            table = prop.getProperty("notarytable");
+        } else if (Integer.parseInt(user.getRoleId()) == 2) {
+            table = prop.getProperty("registrytable");
+        } else {
+            throw new InvalidRoleIdException("Incorrect user ID!");
+        }
+
+        String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
+                + "password_hash=\"" + salt.getSaltedPassword() + "\","
+                + "salt=\"" + salt.getSalt() + "\","
+                + "public_key=\"" + user.getPubKey() + "\";";
+        log.log(Level.INFO, "Executing query {0}", query);
+
+        sendRequestToDB(query);
+
+    }
+
+    private static void sendRequestToDB(String query) {
         try {
             int result = connect().createStatement().executeUpdate(query);
-            System.out.println(result);
+            log.log(Level.INFO, String.valueOf(result));
         } catch (SQLException | IOException e) {
             e.printStackTrace();
         }
     }
+
     public static boolean isPasswordValid(UserLoginDTO user) throws IOException {
 
         loadProps();
@@ -207,7 +240,7 @@ public class SQLDatabaseConnection {
             try {
                 ResultSet resultSet = connect().createStatement().executeQuery(query);
                 resultSet.next();
-                return generateJWT(user, resultSet.getString(1));
+                return generateJWT(user, resultSet.getString(1), "0");
             }
             catch (SQLException | IOException e) {
                 e.printStackTrace();
@@ -215,13 +248,43 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
-    private static String generateJWT(UserLoginDTO user, String ID) {
+
+    public static String notaryRegistryLogin(NotaryRegistryLoginDTO user) throws IOException {
+        loadProps();
+        String table, columnName;
+
+        if (Integer.parseInt(user.getRoleId()) == 1) {
+            table = prop.getProperty("notarytable");
+            columnName = "notary_id";
+        } else if (Integer.parseInt(user.getRoleId()) == 2) {
+            table = prop.getProperty("registrytable");
+            columnName = "registry_id";
+        } else {
+            throw new InvalidRoleIdException("Incorrect user ID!");
+        }
+
+        String query = "SELECT " + columnName + " FROM " + table + " WHERE email=\"" + user.getEmail() + "\";";
+        log.log(Level.INFO, "Executing query {0}", query);
+
+        try {
+            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            UserLoginDTO login = new UserLoginDTO(user.getEmail(), user.getPassword());
+            return generateJWT(login, resultSet.getString(1), user.getRoleId());
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static String generateJWT(UserLoginDTO user, String ID, String accountTypeId) {
         try {
             return JWT.create()
                     .withIssuer("LiV Portal")
                     .withAudience("LiV Portal")
                     .withIssuedAt(new Date())
                     .withNotBefore(new Date())
+                    .withClaim("account_type_id", accountTypeId)
                     .withClaim("user_id", ID)
                     .withClaim("email", user.getEmail())
                     .sign(Algorithm.HMAC256(secret));
@@ -236,20 +299,21 @@ public class SQLDatabaseConnection {
                     .withIssuer("LiV Portal")
                     .build();
             DecodedJWT jwt = verifier.verify(token);
-             JSONObject json = new JSONObject();
-             try {
-                 Field changeMap = json.getClass().getDeclaredField("map");
-                 changeMap.setAccessible(true);
-                 changeMap.set(json, new LinkedHashMap<>());
-                 changeMap.setAccessible(false);
-             } catch (IllegalAccessException | NoSuchFieldException e) {
-                 e.printStackTrace();
-             }
-             json
+            JSONObject json = new JSONObject();
+            try {
+                Field changeMap = json.getClass().getDeclaredField("map");
+                changeMap.setAccessible(true);
+                changeMap.set(json, new LinkedHashMap<>());
+                changeMap.setAccessible(false);
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                e.printStackTrace();
+            }
+            json
+                    .put("account_type_id", jwt.getClaim("account_type_id").asString())
                     .put("user_id", jwt.getClaim("id").asString())
                     .put("email", jwt.getClaim("email").asString());
-             String JWTClaimsJSON = json.toString();
-             return JWTClaimsJSON;
+            String JWTClaimsJSON = json.toString();
+            return JWTClaimsJSON;
         } catch (JWTDecodeException e) {
             return null;
         }
