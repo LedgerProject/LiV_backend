@@ -57,6 +57,92 @@ public class SQLDatabaseConnection {
         return new Salt(salt, saltedPasswordHash);
     }
 
+    public static int createWill(CreateWillDTO will) throws IOException {
+        loadProps();
+        String latestKycId, latestDocumentId;
+
+        // Add KYC information in the database
+        String query = "INSERT INTO " + prop.getProperty("kyctable") + " SET first_name=\"" + will.getKyc().getFirstName() + "\","
+                + "middle_name=\"" + will.getKyc().getMiddleName() + "\","
+                + "last_name=\"" + will.getKyc().getLastName() + "\","
+                + "address=\"" + will.getKyc().getAddress() + "\","
+                + "passport_number=\"" + will.getKyc().getPassportNumber() + "\";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
+
+        // Assign the KYC identifier to the user
+        query = "SELECT kyc_id FROM " + prop.getProperty("kyctable") + " ORDER BY kyc_id DESC LIMIT 1";
+        try {
+            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            latestKycId = resultSet.getString(1);
+            query = "UPDATE " + prop.getProperty("usertable") + " SET kyc_id=" + latestKycId
+                + " WHERE email=\"" + will.getEmail() + "\";";
+            log.log(Level.INFO, "Executing query {0}", query);
+            executeUpdateToDB(query);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
+        // Upload documents and add new doc to the database
+        query = "INSERT INTO " + prop.getProperty("docstable") + " SET hash=\"" + DSM.SHA256hex(will.getDocument()) + "\","
+                + "path=\"" + will.getDocument() + "\";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
+
+        // Add new request
+        query = "SELECT document_id FROM " + prop.getProperty("docstable") + " ORDER BY document_id DESC LIMIT 1";
+        try {
+            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            latestDocumentId = resultSet.getString(1);
+            query = "INSERT INTO " + prop.getProperty("requeststable") + " SET user_id=" + getUserId(will.getEmail()) + ","
+                    + "status_id=0, document_id=" + latestDocumentId + ";";
+            log.log(Level.INFO, "Executing query {0}", query);
+            executeUpdateToDB(query);
+            return 0;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return 1;
+    }
+
+    public static ArrayList<WillBasicDTO> getWills() throws IOException {
+        String status;
+        String query1;
+        String kycId;
+        String fullName;
+        ResultSet resultSet1;
+        loadProps();
+        ArrayList<WillBasicDTO> wills = new ArrayList<>();
+
+        String query = "SELECT * FROM requests;";
+        try {
+            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            while (resultSet.next()) {
+                // Getting the status by its id
+                query1 = "SELECT status FROM statuses WHERE status_id=" + resultSet.getString(3) + ";";
+                resultSet1 = connect().createStatement().executeQuery(query1);
+                resultSet1.next();
+                status = resultSet1.getString(1);
+                // Getting a person's name and passport ID by user id
+                query1 = "SELECT kyc_id FROM users WHERE user_id=" + resultSet.getString(2) + ";";
+                resultSet1 = connect().createStatement().executeQuery(query1);
+                resultSet1.next();
+                kycId = resultSet1.getString(1);
+                query1 = "SELECT first_name, middle_name, last_name, passport_number FROM kyc WHERE kyc_id=" + kycId + ";";
+                resultSet1 = connect().createStatement().executeQuery(query1);
+                resultSet1.next();
+                fullName = resultSet1.getString(1) + " " + resultSet1.getString(2) + " " + resultSet1.getString(3);
+                wills.add(new WillBasicDTO(resultSet.getString(1),fullName, resultSet1.getString(4), status));
+            }
+            return wills;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return null;
+    }
+
     public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException {
 
         loadProps();
@@ -69,7 +155,7 @@ public class SQLDatabaseConnection {
                 + "did=\"" + did + "\";";
         log.log(Level.INFO, "Executing query {0}", query);
 
-        sendRequestToDB(query);
+        executeUpdateToDB(query);
     }
 
     public static void createNotaryRegistry(NotaryRegistryDTO user) throws IOException {
@@ -91,11 +177,11 @@ public class SQLDatabaseConnection {
                 + "public_key=\"" + user.getPubKey() + "\";";
         log.log(Level.INFO, "Executing query {0}", query);
 
-        sendRequestToDB(query);
+        executeUpdateToDB(query);
 
     }
 
-    private static void sendRequestToDB(String query) {
+    private static void executeUpdateToDB(String query) {
         try {
             int result = connect().createStatement().executeUpdate(query);
             log.log(Level.INFO, String.valueOf(result));
