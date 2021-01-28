@@ -18,4 +18,16 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: module
-          file: cryptomodule-1.1.0.jar
+          path: /cryptomodule-1.1.0.jar
+  push:
+    name: push
+    runs-on: ubuntu-latest
+    steps:
+    - name: executing remote ssh commands using password
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: whoami
