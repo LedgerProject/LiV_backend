@@ -30,18 +30,16 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
-      - name: SSH test
-        run: ssh staging 'rm ~/liv/cryptomodule-1.1.0.jar'
+      - name: SSH rm old version
+        run: ssh staging 'rm ~/cryptomodule-1.1.0.jar'
       - name: SSH copy
-        run: scp target/cryptomodule-1.1.0.jar staging:~/liv/cryptomodule-1.1.0.jar
-      - name: SSH test
-        run: ssh staging 'ls liv'
+        run: scp target/cryptomodule-1.1.0.jar staging:~/cryptomodule-1.1.0.jar
       - name: Upload math result
         uses: actions/upload-artifact@v2
         with:
           name: module
           path: target/cryptomodule-1.1.0.jar
-  copy:
+  restart:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -61,29 +59,7 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
-        - name: SSH copy
-          run: scp target/cryptomodule-1.1.0.jar staging:~/liv/cryptomodule-1.1.0.jar
-        - name: SSH test
-          run: ssh staging 'ls liv'
-        - name: copy file via ssh password
-          uses: appleboy/scp-action@master
-          with:
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.SSH_USER }}
-            key: ${{ secrets.PRIVATE_KEY}}
-            port: 22
-            source: "target/cryptomodule-1.1.0.jar"
-            target: "liv/"
-  push:
-    needs: copy
-    name: push
-    runs-on: ubuntu-latest
-    steps:
-    - name: executing remote ssh commands using password
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
-        port: ${{ secrets.PORT }}
-        script: whoami
+        - name: SSH restart service 
+          run: ssh staging 'sudo systemctl restart crypto'
+        - name: SSH status service 
+          run: ssh staging 'sudo systemctl status crypto'
