@@ -14,8 +14,6 @@ jobs:
           java-version: 11
       - name: Build with Maven
         run: mvn package
-      - name: ls
-        run: ls target
       - name: Configure SSH
         run: |
             mkdir -p ~/.ssh/
@@ -32,6 +30,8 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
+      - name: SSH test
+        run: ssh staging 'rm ~/liv/cryptomodule-1.1.0.jar'
       - name: SSH copy
         run: scp target/cryptomodule-1.1.0.jar staging:~/liv/cryptomodule-1.1.0.jar
       - name: SSH test
