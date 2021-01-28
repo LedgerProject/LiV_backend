@@ -8,6 +8,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
+import com.mysql.jdbc.exceptions.MySQLSyntaxErrorException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -107,6 +108,25 @@ public class SQLDatabaseConnection {
         return 1;
     }
 
+    public static void rejectWill(String willId) throws IOException {
+
+        loadProps();
+
+        String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=-1 WHERE request_id=" + willId + ";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
+
+    }
+
+    public static void approveWill(String willId) throws IOException {
+        loadProps();
+
+        String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=1 WHERE request_id=" + willId + ";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
+
+    }
+
     public static ArrayList<WillBasicDTO> getWills() throws IOException {
         String status;
         String query1;
@@ -137,6 +157,32 @@ public class SQLDatabaseConnection {
                 wills.add(new WillBasicDTO(resultSet.getString(1),fullName, resultSet1.getString(4), status));
             }
             return wills;
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+
+    public static KYC getWillDetails(String willId) throws IOException {
+        loadProps();
+
+        // Getting the id of the user in the request
+        String query = "SELECT user_id FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willId + ";";
+        try {
+            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            String userId = resultSet.getString(1);
+            // Getting the KYC ID for the user
+            query = "SELECT kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + userId + ";";
+            resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            String kycId = resultSet.getString(1);
+            // Getting the full KYC data
+            query = "SELECT * FROM "+ prop.getProperty("kyctable") + " WHERE kyc_id=" + kycId + ";";
+            resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            return new KYC(resultSet.getString(1),resultSet.getString(2),resultSet.getString(3),
+                    resultSet.getString(4), resultSet.getString(5));
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -180,7 +226,6 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query);
 
     }
-
     private static void executeUpdateToDB(String query) {
         try {
             int result = connect().createStatement().executeUpdate(query);
@@ -189,7 +234,6 @@ public class SQLDatabaseConnection {
             e.printStackTrace();
         }
     }
-
     public static boolean isPasswordValid(UserLoginDTO user) throws IOException {
 
         loadProps();
@@ -304,6 +348,7 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
+
     private static String getUserId(String userEmail) throws IOException {
         loadProps();
         String getUserIdQuery = "SELECT user_id FROM " + prop.getProperty("usertable") + " WHERE email=\""
@@ -318,6 +363,7 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
+
     public static String login(UserLoginDTO user) throws IOException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
@@ -334,7 +380,6 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
-
     public static String notaryRegistryLogin(NotaryRegistryLoginDTO user) throws IOException {
         loadProps();
         String table, columnName;
@@ -379,6 +424,7 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
+
     public static String verifyJWT(String token) {
         try {
             JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret))
