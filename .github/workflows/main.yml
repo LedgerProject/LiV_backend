@@ -14,3 +14,8 @@ jobs:
           java-version: 11
       - name: Build with Maven
         run: mvn package
+      - name: Upload math result
+        uses: actions/upload-artifact@v2
+        with:
+          name: module
+          path: cryptomodule-1.1.0.jar
