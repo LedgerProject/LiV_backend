@@ -198,7 +198,8 @@ public class SQLDatabaseConnection {
         String query = "INSERT INTO " + prop.getProperty("usertable") + " SET email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
-                + "did=\"" + did + "\";";
+                + "did=\"" + did + "\","
+                + "role_id=0;";
         log.log(Level.INFO, "Executing query {0}", query);
 
         executeUpdateToDB(query);
@@ -220,7 +221,8 @@ public class SQLDatabaseConnection {
         String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
-                + "public_key=\"" + user.getPubKey() + "\";";
+                + "public_key=\"" + user.getPubKey() + "\","
+                + "role_id=" + user.getRoleId();
         log.log(Level.INFO, "Executing query {0}", query);
 
         executeUpdateToDB(query);
