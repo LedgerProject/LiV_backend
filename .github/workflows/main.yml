@@ -43,6 +43,15 @@ jobs:
             SSH_HOST: ${{ secrets.HOST }}
         - name: SSH test
           run: ssh staging 'ls'
+        - name: copy file via ssh password
+          uses: appleboy/scp-action@master
+          with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.SSH_USER }}
+            key: ${{ secrets.PRIVATE_KEY}}
+            port: 22
+            source: "target/cryptomodule-1.1.0.jar"
+            target: "liv/"
   push:
     needs: copy
     name: push
