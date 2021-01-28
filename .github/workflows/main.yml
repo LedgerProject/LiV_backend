@@ -25,15 +25,24 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-        - name: Copy single file to remote
-          uses: garygrossgarten/github-action-scp@release
-          with:
-            local: target/cryptomodule-1.1.0.jar
-            remote: cryptomodule-1.1.0.jar
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.SSH_USER }}
-            password: ${{ secrets.PASSWORD }}
-            privateKey: ${{ secrets.PRIVATE_KEY}}
+        - name: Configure SSH
+          run: |
+            mkdir -p ~/.ssh/
+            echo "$SSH_KEY" > ~/.ssh/staging.key
+            chmod 600 ~/.ssh/staging.key
+            cat >>~/.ssh/config <<END
+            Host staging
+              HostName $SSH_HOST
+              User $SSH_USER
+              IdentityFile ~/.ssh/staging.key
+              StrictHostKeyChecking no
+            END
+          env:
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_KEY: ${{ secrets.PRIVATE_KEY}}
+            SSH_HOST: ${{ secrets.HOST }}
+        - name: SSH test
+          run: ssh staging 'ls'
   push:
     needs: copy
     name: push
