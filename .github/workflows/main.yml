@@ -13,7 +13,8 @@ jobs:
         with:
           java-version: 11
       - name: Build with Maven
-        run: mvn package
+      - run: mvn package
+      - run: ls  
       - name: Upload math result
         uses: actions/upload-artifact@v2
         with:
