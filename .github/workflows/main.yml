@@ -41,10 +41,10 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
-        - name: SSH test
-          run: ssh staging 'ls'
         - name: SSH copy
           run: scp target/cryptomodule-1.1.0.jar staging:~/liv/cryptomodule-1.1.0.jar
+        - name: SSH test
+          run: ssh staging 'ls liv'
         - name: copy file via ssh password
           uses: appleboy/scp-action@master
           with:
