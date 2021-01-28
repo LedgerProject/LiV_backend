@@ -20,7 +20,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: module
-          path: /target/cryptomodule-1.1.0.jar
+          path: target/cryptomodule-1.1.0.jar
   push:
     name: push
     runs-on: ubuntu-latest
