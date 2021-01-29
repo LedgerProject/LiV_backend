@@ -10,10 +10,12 @@ jobs:
         - name: Configure stage service
           run: |
             ls
+            cat src/main/resources/config.properties
             sed -i "s~__AUTHPARAMS__~$AUTHPARAMS~" src/main/resources/config.properties
             sed -i "s~__DBURL__~$DBURL~" src/main/resources/config.properties
             sed -i "s~__DBUSERNAME__~$DBUSERNAME~" src/main/resources/config.properties
             sed -i "s~__DBPASSWORD__~$DBPASSWORD~" src/main/resources/config.properties
+            cat src/main/resources/config.properties
           env:
             AUTHPARAMS: ${{ secrets.AUTHPARAMS }}
             DBURL: ${{ secrets.DBURL}}
