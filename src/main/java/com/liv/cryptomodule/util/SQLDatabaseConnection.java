@@ -122,39 +122,48 @@ public class SQLDatabaseConnection {
 
     }
 
-    public static ArrayList<WillBasicDTO> getWills() throws IOException {
-        String status;
-        String query1;
-        String kycId;
-        String fullName;
-        ResultSet resultSet1;
+    public static ArrayList<WillRequestDTO> getWills() throws IOException {
         loadProps();
-        ArrayList<WillBasicDTO> wills = new ArrayList<>();
-
-        String query = "SELECT * FROM requests;";
+        ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
+        // Get all will requests
+        String query = "SELECT * FROM " + prop.getProperty("requeststable") + ";";
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
-            while (resultSet.next()) {
-                // Getting the status by its id
-                query1 = "SELECT status FROM statuses WHERE status_id=" + resultSet.getString(3) + ";";
-                resultSet1 = connect().createStatement().executeQuery(query1);
-                resultSet1.next();
-                status = resultSet1.getString(1);
-                // Getting a person's name and passport ID by user id
-                query1 = "SELECT kyc_id FROM users WHERE user_id=" + resultSet.getString(2) + ";";
-                resultSet1 = connect().createStatement().executeQuery(query1);
-                resultSet1.next();
-                kycId = resultSet1.getString(1);
-                query1 = "SELECT first_name, middle_name, last_name, passport_number FROM kyc WHERE kyc_id=" + kycId + ";";
-                resultSet1 = connect().createStatement().executeQuery(query1);
-                resultSet1.next();
-                fullName = resultSet1.getString(1) + " " + resultSet1.getString(2) + " " + resultSet1.getString(3);
-                wills.add(new WillBasicDTO(resultSet.getString(1),fullName, resultSet1.getString(4), status));
+            while(resultSet.next()) {
+                WillRequestDTO willRequest = new WillRequestDTO();
+                willRequest.setRequestId(resultSet.getString(1));
+                willRequest.setUserId(resultSet.getString(2));
+                willRequest.setStatusId(resultSet.getString(3));
+                String documentId = resultSet.getString(4);
+
+                query = "SELECT email, did, kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + resultSet.getString(2) + ";";
+                resultSet = connect().createStatement().executeQuery(query);
+                resultSet.next();
+                willRequest.setEmail(resultSet.getString(1));
+                willRequest.setDid(resultSet.getString(2));
+                String kycId = resultSet.getString(3);
+
+                query = "SELECT * FROM kyc WHERE kyc_id=" + kycId + ";";
+                resultSet = connect().createStatement().executeQuery(query);
+                resultSet.next();
+                willRequest.setFullName(resultSet.getString(2) + " " + resultSet.getString(3) + " " + resultSet.getString(4));
+                willRequest.setAddress(resultSet.getString(5));
+                willRequest.setPassportId(resultSet.getString(6));
+
+                query = "SELECT * FROM " + prop.getProperty("docstable") + " WHERE document_id=" + documentId + ";";
+                resultSet = connect().createStatement().executeQuery(query);
+                resultSet.next();
+                willRequest.setDocumentHash(resultSet.getString(2));
+                willRequest.setDocumentLink(resultSet.getString(3));
+
+                willRequests.add(willRequest);
             }
             resultSet.close();
-            return wills;
-        } catch (SQLException | ClassNotFoundException throwables) {
+            return willRequests;
+        } catch (SQLException throwables) {
             throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
         return new ArrayList<>();
     }
