@@ -1,8 +1,16 @@
-name: Run on demand
+name: Run manual restart
 
 on:
-  issue_comment:
-    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Person to greet'
+        required: true
+        default: 'Mona the Octocat'
+      home:
+        description: 'location'
+        required: false
+        default: 'The Octoverse'
 
 jobs:
   ondemand:
