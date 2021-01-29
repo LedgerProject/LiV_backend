@@ -150,6 +150,7 @@ public class SQLDatabaseConnection {
         String query = "SELECT * FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willRequestId + ";";
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
 
             WillRequestDTO willRequest = new WillRequestDTO();
             willRequest.setRequestId(resultSet.getString(1));
