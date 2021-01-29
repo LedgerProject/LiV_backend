@@ -6,6 +6,7 @@ jobs:
   configure:
     runs-on: ubuntu-latest
     steps:
+        - uses: actions/checkout@v2
         - name: Configure stage service
           run: |
             ls
