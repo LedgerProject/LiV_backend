@@ -8,7 +8,6 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
-import org.graalvm.compiler.word.Word;
 import org.json.JSONObject;
 
 import java.io.IOException;
