@@ -8,6 +8,7 @@ jobs:
     steps:
         - name: Configure stage service
           run: |
+            ls
             sed -i "s~__AUTHPARAMS__~$AUTHPARAMS~" src/main/resources/config.properties
             sed -i "s~__DBURL__~$DBURL~" src/main/resources/config.properties
             sed -i "s~__DBUSERNAME__~$DBUSERNAME~" src/main/resources/config.properties
