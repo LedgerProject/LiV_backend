@@ -151,6 +151,7 @@ public class SQLDatabaseConnection {
                 fullName = resultSet1.getString(1) + " " + resultSet1.getString(2) + " " + resultSet1.getString(3);
                 wills.add(new WillBasicDTO(resultSet.getString(1),fullName, resultSet1.getString(4), status));
             }
+            resultSet.close();
             return wills;
         } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
@@ -176,8 +177,10 @@ public class SQLDatabaseConnection {
             query = "SELECT * FROM "+ prop.getProperty("kyctable") + " WHERE kyc_id=" + kycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            return new KYC(resultSet.getString(1),resultSet.getString(2),resultSet.getString(3),
+            KYC kyc = new KYC(resultSet.getString(1),resultSet.getString(2),resultSet.getString(3),
                     resultSet.getString(4), resultSet.getString(5), resultSet.getString(6));
+            resultSet.close();
+            return kyc;
         } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
@@ -230,6 +233,15 @@ public class SQLDatabaseConnection {
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+        try {
+            connect().close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
     public static boolean isPasswordValid(UserLoginDTO user) throws IOException {
 
@@ -247,6 +259,7 @@ public class SQLDatabaseConnection {
             String salt = resultSet.getString(2);
             String saltedPassword = user.getPassword() + "." + salt;
             String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
+            resultSet.close();
             if (dbPassword.equals(saltedPasswordHash)) {
                 return true;
             }
@@ -265,6 +278,7 @@ public class SQLDatabaseConnection {
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
             if (resultSet.next()) {
+                resultSet.close();
                 return true;
             }
         } catch (SQLException | IOException | ClassNotFoundException e) {
@@ -281,12 +295,8 @@ public class SQLDatabaseConnection {
                 + "institution=\"" + serviceStatus.getInstitution() + "\","
                 + "service=\"" + serviceStatus.getService() + "\","
                 + "status=\"" + serviceStatus.getStatus() + "\";";
-        try {
-            System.out.println("Executing query: " + setQuery);
-            connect().createStatement().executeUpdate(setQuery);
-        } catch (SQLException | IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        System.out.println("Executing query: " + setQuery);
+        executeUpdateToDB(setQuery);
     }
     public static String addKYC(KycDTO kyc, String filePath) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         loadProps();
@@ -305,14 +315,9 @@ public class SQLDatabaseConnection {
                 + "document_id=\"" + documentId + "\","
                 + "file_hash=\"" + fileHash + "\","
                 + "file_path=\"" + filePath + "\";";
-        try {
-            System.out.println("Executing query: " + query);
-            connect().createStatement().executeUpdate(query);
-            return documentId;
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
+        System.out.println("Executing query: " + query);
+        executeUpdateToDB(query);
+        return documentId;
     }
     private static String getUserPassword(String email) throws IOException {
         loadProps();
@@ -322,7 +327,9 @@ public class SQLDatabaseConnection {
             System.out.println("Executing query: " + query);
             ResultSet resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            return resultSet.getString(1);
+            String password = resultSet.getString(1);
+            resultSet.close();
+            return password;
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -339,6 +346,7 @@ public class SQLDatabaseConnection {
             while (resultSet.next()) {
                 statuses.add(new ServiceStatusDTO(resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5)));
             }
+            resultSet.close();
             return statuses;
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -354,7 +362,9 @@ public class SQLDatabaseConnection {
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(getUserIdQuery);
             resultSet.next();
-            return resultSet.getString(1);
+            String userId = resultSet.getString(1);
+            resultSet.close();
+            return userId;
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -369,7 +379,9 @@ public class SQLDatabaseConnection {
             try {
                 ResultSet resultSet = connect().createStatement().executeQuery(query);
                 resultSet.next();
-                return generateJWT(user, resultSet.getString(1), "0");
+                String jwt = generateJWT(user, resultSet.getString(1), "0");
+                resultSet.close();
+                return jwt;
             }
             catch (SQLException | IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -398,7 +410,9 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             UserLoginDTO login = new UserLoginDTO(user.getEmail(), user.getPassword());
-            return generateJWT(login, resultSet.getString(1), user.getRoleId());
+            String jwt = generateJWT(login, resultSet.getString(1), user.getRoleId());
+            resultSet.close();
+            return jwt;
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
