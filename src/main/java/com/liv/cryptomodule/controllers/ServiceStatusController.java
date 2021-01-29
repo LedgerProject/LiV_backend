@@ -5,6 +5,7 @@ import com.liv.cryptomodule.dto.ServiceStatusDTO;
 import com.liv.cryptomodule.dto.UserServicesDTO;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 @RestController
@@ -13,11 +14,11 @@ import java.util.ArrayList;
 public class ServiceStatusController {
 
     @PostMapping("/addServiceStatus")
-    public void addServiceStatus(@RequestBody ServiceStatusDTO serviceStatus) {
+    public void addServiceStatus(@RequestBody ServiceStatusDTO serviceStatus) throws IOException {
         SQLDatabaseConnection.addServiceStatus(serviceStatus);
     }
     @PostMapping("/getUserServices")
-    public ArrayList<ServiceStatusDTO> getUserServices(@RequestBody UserServicesDTO user) {
+    public ArrayList<ServiceStatusDTO> getUserServices(@RequestBody UserServicesDTO user) throws IOException {
         return SQLDatabaseConnection.getUserServices(user);
     }
 }

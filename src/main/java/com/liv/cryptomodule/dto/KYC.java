@@ -1,21 +1,21 @@
 package com.liv.cryptomodule.dto;
 
-public class KycDTO {
+public class KYC {
 
     private String firstName;
     private String middleName;
     private String lastName;
-    private String passportID;
-    private String email;
+    private String address;
+    private String passportNumber;
 
-    public KycDTO() {}
+    public KYC() {}
 
-    public KycDTO(String firstName, String middleName, String lastName, String passportID, String email) {
+    public KYC(String firstName, String middleName, String lastName, String address, String passportNumber) {
         this.firstName = firstName;
         this.middleName = middleName;
         this.lastName = lastName;
-        this.passportID = passportID;
-        this.email = email;
+        this.address = address;
+        this.passportNumber = passportNumber;
     }
 
     public String getFirstName() {
@@ -30,12 +30,11 @@ public class KycDTO {
         return lastName;
     }
 
-    public String getPassportID() {
-        return passportID;
+    public String getAddress() {
+        return address;
     }
 
-    public String getEmail() {
-        return email;
+    public String getPassportNumber() {
+        return passportNumber;
     }
-
 }
