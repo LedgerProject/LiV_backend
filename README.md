@@ -1,4 +1,5 @@
 # LiV backend
+![Java CI](https://github.com/LedgerProject/LiV_backend/workflows/Java%20CI/badge.svg)
 ## Built with
 * [Java 11](https://www.java.com/en/)
 * [Spring Boot 2.4.0](https://spring.io/)
