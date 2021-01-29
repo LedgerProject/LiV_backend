@@ -8,7 +8,6 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
-import com.mysql.jdbc.exceptions.MySQLSyntaxErrorException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -41,14 +40,10 @@ public class SQLDatabaseConnection {
         prop.load(input);
     }
 
-    public static Connection connect() throws IOException {
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            return DriverManager.getConnection(prop.getProperty("dburl") + prop.getProperty("dbname"), prop.getProperty("dbusername"), prop.getProperty("dbpassword"));
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static Connection connect() throws IOException, ClassNotFoundException, SQLException {
+        loadProps();
+        Class.forName("com.mysql.jdbc.Driver");
+        return DriverManager.getConnection(prop.getProperty("dburl") + prop.getProperty("dbname"), prop.getProperty("dbusername"), prop.getProperty("dbpassword"));
     }
 
     private static Salt saltPassword(String password) {
@@ -81,7 +76,7 @@ public class SQLDatabaseConnection {
                 + " WHERE email=\"" + will.getEmail() + "\";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
-        } catch (SQLException throwables) {
+        } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
 
@@ -102,7 +97,7 @@ public class SQLDatabaseConnection {
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
             return 0;
-        } catch (SQLException throwables) {
+        } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
         return 1;
@@ -157,7 +152,7 @@ public class SQLDatabaseConnection {
                 wills.add(new WillBasicDTO(resultSet.getString(1),fullName, resultSet1.getString(4), status));
             }
             return wills;
-        } catch (SQLException throwables) {
+        } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
         return new ArrayList<>();
@@ -182,8 +177,8 @@ public class SQLDatabaseConnection {
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             return new KYC(resultSet.getString(1),resultSet.getString(2),resultSet.getString(3),
-                    resultSet.getString(4), resultSet.getString(5));
-        } catch (SQLException throwables) {
+                    resultSet.getString(4), resultSet.getString(5), resultSet.getString(6));
+        } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
         return null;
@@ -232,7 +227,7 @@ public class SQLDatabaseConnection {
         try {
             int result = connect().createStatement().executeUpdate(query);
             log.log(Level.INFO, String.valueOf(result));
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
@@ -255,7 +250,7 @@ public class SQLDatabaseConnection {
             if (dbPassword.equals(saltedPasswordHash)) {
                 return true;
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return false;
@@ -272,7 +267,7 @@ public class SQLDatabaseConnection {
             if (resultSet.next()) {
                 return true;
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return false;
@@ -289,7 +284,7 @@ public class SQLDatabaseConnection {
         try {
             System.out.println("Executing query: " + setQuery);
             connect().createStatement().executeUpdate(setQuery);
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
@@ -314,7 +309,7 @@ public class SQLDatabaseConnection {
             System.out.println("Executing query: " + query);
             connect().createStatement().executeUpdate(query);
             return documentId;
-        } catch (SQLException e) {
+        } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
@@ -328,7 +323,7 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             return resultSet.getString(1);
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
@@ -345,7 +340,7 @@ public class SQLDatabaseConnection {
                 statuses.add(new ServiceStatusDTO(resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5)));
             }
             return statuses;
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
@@ -360,7 +355,7 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connect().createStatement().executeQuery(getUserIdQuery);
             resultSet.next();
             return resultSet.getString(1);
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
@@ -376,7 +371,7 @@ public class SQLDatabaseConnection {
                 resultSet.next();
                 return generateJWT(user, resultSet.getString(1), "0");
             }
-            catch (SQLException | IOException e) {
+            catch (SQLException | IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
@@ -404,7 +399,7 @@ public class SQLDatabaseConnection {
             resultSet.next();
             UserLoginDTO login = new UserLoginDTO(user.getEmail(), user.getPassword());
             return generateJWT(login, resultSet.getString(1), user.getRoleId());
-        } catch (SQLException | IOException e) {
+        } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return null;
