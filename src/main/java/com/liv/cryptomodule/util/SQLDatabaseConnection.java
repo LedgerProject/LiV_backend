@@ -8,6 +8,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
+import org.graalvm.compiler.word.Word;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -122,7 +123,7 @@ public class SQLDatabaseConnection {
 
     }
 
-    public static ArrayList<WillRequestDTO> getWills() throws IOException {
+    public static ArrayList<WillRequestDTO> getWillRequests() throws IOException {
         loadProps();
         ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
         // Get all will requests
@@ -130,33 +131,9 @@ public class SQLDatabaseConnection {
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
             while(resultSet.next()) {
-                WillRequestDTO willRequest = new WillRequestDTO();
-                willRequest.setRequestId(resultSet.getString(1));
-                willRequest.setUserId(resultSet.getString(2));
-                willRequest.setStatusId(resultSet.getString(3));
-                String documentId = resultSet.getString(4);
-
-                query = "SELECT email, did, kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + resultSet.getString(2) + ";";
-                resultSet = connect().createStatement().executeQuery(query);
-                resultSet.next();
-                willRequest.setEmail(resultSet.getString(1));
-                willRequest.setDid(resultSet.getString(2));
-                String kycId = resultSet.getString(3);
-
-                query = "SELECT * FROM kyc WHERE kyc_id=" + kycId + ";";
-                resultSet = connect().createStatement().executeQuery(query);
-                resultSet.next();
-                willRequest.setFullName(resultSet.getString(2) + " " + resultSet.getString(3) + " " + resultSet.getString(4));
-                willRequest.setAddress(resultSet.getString(5));
-                willRequest.setPassportId(resultSet.getString(6));
-
-                query = "SELECT * FROM " + prop.getProperty("docstable") + " WHERE document_id=" + documentId + ";";
-                resultSet = connect().createStatement().executeQuery(query);
-                resultSet.next();
-                willRequest.setDocumentHash(resultSet.getString(2));
-                willRequest.setDocumentLink(resultSet.getString(3));
-
+                WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString(2));
                 willRequests.add(willRequest);
+
             }
             resultSet.close();
             return willRequests;
@@ -168,32 +145,46 @@ public class SQLDatabaseConnection {
         return new ArrayList<>();
     }
 
-    public static KYC getWillDetails(String willId) throws IOException {
+    public static WillRequestDTO getWillRequestDetails(String willRequestId) throws IOException {
         loadProps();
 
-        // Getting the id of the user in the request
-        String query = "SELECT user_id FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willId + ";";
+        String query = "SELECT * FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willRequestId + ";";
         try {
             ResultSet resultSet = connect().createStatement().executeQuery(query);
-            resultSet.next();
-            String userId = resultSet.getString(1);
-            // Getting the KYC ID for the user
-            query = "SELECT kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + userId + ";";
+
+            WillRequestDTO willRequest = new WillRequestDTO();
+            willRequest.setRequestId(resultSet.getString(1));
+            willRequest.setUserId(resultSet.getString(2));
+            willRequest.setStatusId(resultSet.getString(3));
+            String documentId = resultSet.getString(4);
+
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + resultSet.getString(2) + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            String kycId = resultSet.getString(1);
-            // Getting the full KYC data
-            query = "SELECT * FROM "+ prop.getProperty("kyctable") + " WHERE kyc_id=" + kycId + ";";
+            willRequest.setEmail(resultSet.getString(1));
+            willRequest.setDid(resultSet.getString(2));
+            String kycId = resultSet.getString(3);
+
+            query = "SELECT * FROM kyc WHERE kyc_id=" + kycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            KYC kyc = new KYC(resultSet.getString(1),resultSet.getString(2),resultSet.getString(3),
-                    resultSet.getString(4), resultSet.getString(5), resultSet.getString(6));
-            resultSet.close();
-            return kyc;
-        } catch (SQLException | ClassNotFoundException throwables) {
+            willRequest.setFullName(resultSet.getString(2) + " " + resultSet.getString(3) + " " + resultSet.getString(4));
+            willRequest.setAddress(resultSet.getString(5));
+            willRequest.setPassportId(resultSet.getString(6));
+
+            query = "SELECT * FROM " + prop.getProperty("docstable") + " WHERE document_id=" + documentId + ";";
+            resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            willRequest.setDocumentHash(resultSet.getString(2));
+            willRequest.setDocumentLink(resultSet.getString(3));
+
+            return willRequest;
+        } catch (SQLException throwables) {
             throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
-        return null;
+        return new WillRequestDTO();
     }
 
     public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException {

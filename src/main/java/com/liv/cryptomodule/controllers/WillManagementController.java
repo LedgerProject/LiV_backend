@@ -2,7 +2,6 @@ package com.liv.cryptomodule.controllers;
 
 import com.liv.cryptomodule.dto.CreateWillDTO;
 import com.liv.cryptomodule.dto.KYC;
-import com.liv.cryptomodule.dto.WillBasicDTO;
 import com.liv.cryptomodule.dto.WillRequestDTO;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +20,7 @@ public class WillManagementController {
     }
     @GetMapping("/")
     public ArrayList<WillRequestDTO> getWills() throws IOException {
-        return SQLDatabaseConnection.getWills();
+        return SQLDatabaseConnection.getWillRequests();
     }
     @GetMapping("/approve/{willId:.+}")
     public void approveWill(@PathVariable String willId) throws IOException {
@@ -32,7 +31,7 @@ public class WillManagementController {
         SQLDatabaseConnection.rejectWill(willId);
     }
     @GetMapping("/{willId:.+}")
-    public KYC getWillDetails(@PathVariable String willId) throws IOException {
-        return SQLDatabaseConnection.getWillDetails(willId);
+    public WillRequestDTO getWillDetails(@PathVariable String willId) throws IOException {
+        return SQLDatabaseConnection.getWillRequestDetails(willId);
     }
 }
