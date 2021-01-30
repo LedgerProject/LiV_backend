@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.sql.SQLException;
 
+import com.liv.cryptomodule.exception.LoginException;
 import com.liv.cryptomodule.payload.UploadFileResponse;
 import com.liv.cryptomodule.service.FileStorageService;
 import com.liv.cryptomodule.util.BIM;
@@ -39,8 +40,13 @@ public class UserManagementController {
         SQLDatabaseConnection.createUser(user, signed.getMessageHash());
     }
     @PostMapping("/login")
-    public String login(@RequestBody UserLoginDTO user) throws IOException {
-        return SQLDatabaseConnection.login(user);
+    public String login(@RequestBody UserLoginDTO user) throws IOException, LoginException {
+        String jwt = SQLDatabaseConnection.login(user);
+        if (jwt != null) {
+            return jwt;
+        } else {
+            throw new LoginException("Credentials invalid!");
+        }
     }
     @PostMapping("/verifyJWT")
     public String veryfyJWT(@RequestBody JWTDTO jwt) {
