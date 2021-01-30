@@ -210,10 +210,8 @@ public class SQLDatabaseConnection {
 
         if (Integer.parseInt(user.getRoleId()) == 1) {
             table = prop.getProperty("notarytable");
-        } else if (Integer.parseInt(user.getRoleId()) == 2) {
-            table = prop.getProperty("registrytable");
         } else {
-            throw new InvalidRoleIdException("Incorrect user ID!");
+            table = prop.getProperty("registrytable");
         }
 
         String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
@@ -396,11 +394,9 @@ public class SQLDatabaseConnection {
         if (Integer.parseInt(user.getRoleId()) == 1) {
             table = prop.getProperty("notarytable");
             columnName = "notary_id";
-        } else if (Integer.parseInt(user.getRoleId()) == 2) {
+        } else {
             table = prop.getProperty("registrytable");
             columnName = "registry_id";
-        } else {
-            throw new InvalidRoleIdException("Incorrect user ID!");
         }
 
         String query = "SELECT " + columnName + " FROM " + table + " WHERE email=\"" + user.getEmail() + "\";";

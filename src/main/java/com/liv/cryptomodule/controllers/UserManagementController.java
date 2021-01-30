@@ -5,6 +5,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.sql.SQLException;
 
+import com.liv.cryptomodule.exception.InvalidRoleIdException;
+import com.liv.cryptomodule.exception.JWTException;
 import com.liv.cryptomodule.exception.LoginException;
 import com.liv.cryptomodule.payload.UploadFileResponse;
 import com.liv.cryptomodule.service.FileStorageService;
@@ -49,8 +51,13 @@ public class UserManagementController {
         }
     }
     @PostMapping("/verifyJWT")
-    public String veryfyJWT(@RequestBody JWTDTO jwt) {
-        return SQLDatabaseConnection.verifyJWT(jwt.getJwt());
+    public String veryfyJWT(@RequestBody JWTDTO jwt) throws JWTException {
+        String decodedJwt = SQLDatabaseConnection.verifyJWT(jwt.getJwt());
+        if (decodedJwt != null) {
+            return decodedJwt;
+        } else {
+            throw new JWTException("Could not decode JWT");
+        }
     }
     @RequestMapping(value = "/addKYC", method = RequestMethod.POST, consumes = {"multipart/form-data"})
     public UploadFileResponse addKYC(@RequestPart("firstName") String firstName, @RequestPart("middleName") String middleName,
@@ -68,11 +75,17 @@ public class UserManagementController {
                 file.getContentType(), file.getSize());
     }
     @PostMapping("/signup-notary-registry")
-    public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) throws IOException {
-        SQLDatabaseConnection.createNotaryRegistry(user);
+    public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) throws IOException, InvalidRoleIdException {
+        if ((Integer.parseInt(user.getRoleId()) == 1) || (Integer.parseInt(user.getRoleId()) == 2)) {
+            SQLDatabaseConnection.createNotaryRegistry(user);
+        }
+        else throw new InvalidRoleIdException("Such role ID does not exist");
     }
     @PostMapping("/login-notary-registry")
-    public String loginNotaryRegistry(@RequestBody NotaryRegistryLoginDTO user) throws IOException {
-        return SQLDatabaseConnection.notaryRegistryLogin(user);
+    public String loginNotaryRegistry(@RequestBody NotaryRegistryLoginDTO user) throws IOException, InvalidRoleIdException {
+        if ((Integer.parseInt(user.getRoleId()) == 1) || (Integer.parseInt(user.getRoleId()) == 2)) {
+            return SQLDatabaseConnection.notaryRegistryLogin(user);
+        }
+        else throw new InvalidRoleIdException("Such role ID does not exist");
     }
 }
