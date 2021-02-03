@@ -7,7 +7,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.liv.cryptomodule.dto.*;
-import com.liv.cryptomodule.exception.InvalidRoleIdException;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -17,7 +17,10 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -68,12 +71,12 @@ public class SQLDatabaseConnection {
 
         // Assign the KYC identifier to the user
         query = "SELECT kyc_id FROM " + prop.getProperty("kyctable") + " ORDER BY kyc_id DESC LIMIT 1";
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestKycId = resultSet.getString(1);
             query = "UPDATE " + prop.getProperty("usertable") + " SET kyc_id=" + latestKycId
-                + " WHERE email=\"" + will.getEmail() + "\";";
+                    + " WHERE email=\"" + will.getEmail() + "\";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
         } catch (SQLException | ClassNotFoundException throwables) {
@@ -88,8 +91,8 @@ public class SQLDatabaseConnection {
 
         // Add new request
         query = "SELECT document_id FROM " + prop.getProperty("docstable") + " ORDER BY document_id DESC LIMIT 1";
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
             query = "INSERT INTO " + prop.getProperty("requeststable") + " SET user_id=" + getUserId(will.getEmail()) + ","
@@ -127,12 +130,13 @@ public class SQLDatabaseConnection {
         ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
         // Get all will requests
         String query = "SELECT * FROM " + prop.getProperty("requeststable") + ";";
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
-            while(resultSet.next()) {
-                WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString(2));
-                willRequests.add(willRequest);
-
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            while (resultSet.next()) {
+                if (resultSet.getString(2) != null) {
+                    WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString(2));
+                    willRequests.add(willRequest);
+                }
             }
             resultSet.close();
             return willRequests;
@@ -144,12 +148,12 @@ public class SQLDatabaseConnection {
         return new ArrayList<>();
     }
 
-    public static WillRequestDTO getWillRequestDetails(String willRequestId) throws IOException {
+    public static WillRequestDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
         loadProps();
 
         String query = "SELECT * FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willRequestId + ";";
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
 
             WillRequestDTO willRequest = new WillRequestDTO();
@@ -224,23 +228,16 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query);
 
     }
+
     private static void executeUpdateToDB(String query) {
-        try {
-            int result = connect().createStatement().executeUpdate(query);
+        try (Connection connection = connect()) {
+            int result = connection.createStatement().executeUpdate(query);
             log.log(Level.INFO, String.valueOf(result));
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        try {
-            connect().close();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
     }
+
     public static boolean isPasswordValid(UserLoginDTO user) throws IOException {
 
         loadProps();
@@ -250,8 +247,8 @@ public class SQLDatabaseConnection {
 //        String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
         String query = "SELECT password_hash, salt FROM " + prop.getProperty("usertable") + " WHERE email=\"" + user.getEmail() + "\";";
         System.out.println("Executing query: " + query);
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             String dbPassword = resultSet.getString(1);
             String salt = resultSet.getString(2);
@@ -266,6 +263,7 @@ public class SQLDatabaseConnection {
         }
         return false;
     }
+
     public static boolean isEmailExists(UserLoginDTO user) throws IOException {
 
         loadProps();
@@ -273,8 +271,8 @@ public class SQLDatabaseConnection {
         String query = "SELECT email FROM " + prop.getProperty("usertable") +
                 " WHERE email=\"" + user.getEmail() + "\";";
         System.out.println("Executing query: " + query);
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             if (resultSet.next()) {
                 resultSet.close();
                 return true;
@@ -284,6 +282,7 @@ public class SQLDatabaseConnection {
         }
         return false;
     }
+
     public static void addServiceStatus(ServiceStatusDTO serviceStatus) throws IOException {
 
         loadProps();
@@ -296,6 +295,7 @@ public class SQLDatabaseConnection {
         System.out.println("Executing query: " + setQuery);
         executeUpdateToDB(setQuery);
     }
+
     public static String addKYC(KycDTO kyc, String filePath) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         loadProps();
         String fileHash = DSM.SHA256hex(filePath + "." + DSM.generateSalt());
@@ -317,13 +317,14 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query);
         return documentId;
     }
+
     private static String getUserPassword(String email) throws IOException {
         loadProps();
         String query = "SELECT password_hash FROM " + prop.getProperty("usertable") + " WHERE id =" +
                 "\"" + getUserId(email) + "\";";
-        try {
+        try (Connection connection = connect()) {
             System.out.println("Executing query: " + query);
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             String password = resultSet.getString(1);
             resultSet.close();
@@ -333,14 +334,15 @@ public class SQLDatabaseConnection {
         }
         return null;
     }
+
     public static ArrayList<ServiceStatusDTO> getUserServices(UserServicesDTO user) throws IOException {
         loadProps();
         ArrayList<ServiceStatusDTO> statuses = new ArrayList<>();
         String query = "SELECT * FROM " + prop.getProperty("statustable") + " WHERE " +
                 "user_id=\"" + getUserId(user.getEmail()) + "\"";
-        try {
+        try (Connection connection = connect()) {
             System.out.println("Executing query: " + query);
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             while (resultSet.next()) {
                 statuses.add(new ServiceStatusDTO(resultSet.getString(2), resultSet.getString(3), resultSet.getString(4), resultSet.getString(5)));
             }
@@ -357,8 +359,8 @@ public class SQLDatabaseConnection {
         String getUserIdQuery = "SELECT user_id FROM " + prop.getProperty("usertable") + " WHERE email=\""
                 + userEmail + "\";";
         System.out.println("Executing query: " + getUserIdQuery);
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(getUserIdQuery);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(getUserIdQuery);
             resultSet.next();
             String userId = resultSet.getString(1);
             resultSet.close();
@@ -374,19 +376,19 @@ public class SQLDatabaseConnection {
         if (isEmailExists(user) && isPasswordValid(user)) {
             String query = "SELECT user_id FROM " + prop.getProperty("usertable") + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
-            try {
-                ResultSet resultSet = connect().createStatement().executeQuery(query);
+            try (Connection connection = connect()) {
+                ResultSet resultSet = connection.createStatement().executeQuery(query);
                 resultSet.next();
                 String jwt = generateJWT(user, resultSet.getString(1), "0");
                 resultSet.close();
                 return jwt;
-            }
-            catch (SQLException | IOException | ClassNotFoundException e) {
+            } catch (SQLException | IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
         return null;
     }
+
     public static String notaryRegistryLogin(NotaryRegistryLoginDTO user) throws IOException {
         loadProps();
         String table, columnName;
@@ -402,8 +404,8 @@ public class SQLDatabaseConnection {
         String query = "SELECT " + columnName + " FROM " + table + " WHERE email=\"" + user.getEmail() + "\";";
         log.log(Level.INFO, "Executing query {0}", query);
 
-        try {
-            ResultSet resultSet = connect().createStatement().executeQuery(query);
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             UserLoginDTO login = new UserLoginDTO(user.getEmail(), user.getPassword());
             String jwt = generateJWT(login, resultSet.getString(1), user.getRoleId());
