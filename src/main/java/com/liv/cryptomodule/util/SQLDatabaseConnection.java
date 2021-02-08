@@ -6,9 +6,15 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +40,10 @@ public class SQLDatabaseConnection {
     private static final Logger log = java.util.logging.Logger.getLogger(SQLDatabaseConnection.class.getName());
     private static final String secret = "fnvjksfhewjoilrh39483294032yrfsbdnz";
 
+    private static final String IPFS_URL = "http://18.192.22.193:8080/ipfs/";
+    private static final String IPFS_BASE_URL = "http://18.192.22.193:5001";
+    private static final String ADD_FILE_ENDPOINT = "/api/v0/add";
+
     private static void loadProps() throws IOException {
         InputStream input = SQLDatabaseConnection.class.getClassLoader().getResourceAsStream("config.properties");
         if (input == null) {
@@ -56,7 +66,7 @@ public class SQLDatabaseConnection {
         return new Salt(salt, saltedPasswordHash);
     }
 
-    public static int createWill(CreateWillDTO will) throws IOException {
+    public static int createWill(CreateWillDTO will, MultipartFile file) throws IOException {
         loadProps();
         String latestKycId, latestDocumentId;
 
@@ -84,11 +94,8 @@ public class SQLDatabaseConnection {
         }
 
         // Upload documents and add new doc to the database
-        query = "INSERT INTO " + prop.getProperty("docstable") + " SET hash=\"" + DSM.SHA256hex(will.getDocument()) + "\","
-                + "path=\"" + will.getDocument() + "\";";
-        log.log(Level.INFO, "Executing query {0}", query);
-        executeUpdateToDB(query);
 
+        saveDocumentToIpfs(file);
         // Add new request
         query = "SELECT document_id FROM " + prop.getProperty("docstable") + " ORDER BY document_id DESC LIMIT 1";
         try (Connection connection = connect()) {
@@ -104,6 +111,45 @@ public class SQLDatabaseConnection {
             throwables.printStackTrace();
         }
         return 1;
+    }
+
+    private static void saveDocumentToIpfs(MultipartFile file) throws IOException {
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+
+        okhttp3.RequestBody body =
+                okhttp3.RequestBody.create(okhttp3.MediaType.parse(file.getContentType()), file.getBytes());
+
+        MultipartBody multipartBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)  // Header to show we are sending a Multipart Form Data
+                .addFormDataPart("file", file.getOriginalFilename(), body) // file param
+                .build();
+
+        System.out.println(IPFS_BASE_URL + ADD_FILE_ENDPOINT);
+
+        Request request = new Request.Builder()
+                .url(IPFS_BASE_URL + ADD_FILE_ENDPOINT)
+                .post(multipartBody)
+                .build();
+        Response response = client.newCall(request).execute();
+
+
+        String resp = response.body().string();
+
+        System.out.println(resp);
+        ObjectMapper objectMapper = new ObjectMapper();
+        IpsfResponse ipsfResponse = objectMapper.readValue(resp, IpsfResponse.class);
+
+        addDocumentToDb(ipsfResponse.getHash());
+    }
+
+    private static void addDocumentToDb(String ipfsDocumentHash) throws IOException {
+        loadProps();
+
+        String query = "INSERT INTO " + prop.getProperty("docstable") + " SET hash=\"" + ipfsDocumentHash + "\","
+                + "path=\"" + IPFS_URL + ipfsDocumentHash + "\";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
     }
 
     public static void rejectWill(String willId) throws IOException {

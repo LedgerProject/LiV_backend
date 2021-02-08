@@ -1,4 +1,5 @@
 package com.liv.cryptomodule.controllers;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -41,6 +42,7 @@ public class UserManagementController {
         String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
         SQLDatabaseConnection.createUser(user, signed.getMessageHash());
     }
+
     @PostMapping("/login")
     public String login(@RequestBody UserLoginDTO user) throws IOException, LoginException {
         String jwt = SQLDatabaseConnection.login(user);
@@ -50,6 +52,7 @@ public class UserManagementController {
             throw new LoginException("Credentials invalid!");
         }
     }
+
     @PostMapping("/verifyJWT")
     public String veryfyJWT(@RequestBody JWTDTO jwt) throws JWTException {
         String decodedJwt = SQLDatabaseConnection.verifyJWT(jwt.getJwt());
@@ -59,9 +62,10 @@ public class UserManagementController {
             throw new JWTException("Could not decode JWT");
         }
     }
+
     @RequestMapping(value = "/addKYC", method = RequestMethod.POST, consumes = {"multipart/form-data"})
     public UploadFileResponse addKYC(@RequestPart("firstName") String firstName, @RequestPart("middleName") String middleName,
-            @RequestPart("lastName") String lastName, @RequestPart("passportID") String passportId, @RequestPart("email") String email,
+                                     @RequestPart("lastName") String lastName, @RequestPart("passportID") String passportId, @RequestPart("email") String email,
                                      @RequestPart("file") MultipartFile file)
             throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         KycDTO kyc = new KycDTO(firstName, middleName, lastName, passportId, email);
@@ -74,18 +78,18 @@ public class UserManagementController {
         return new UploadFileResponse(fileName, fileDownloadUri,
                 file.getContentType(), file.getSize());
     }
+
     @PostMapping("/signup-notary-registry")
     public void signupNotaryRegistry(@RequestBody NotaryRegistryDTO user) throws IOException, InvalidRoleIdException {
         if ((Integer.parseInt(user.getRoleId()) == 1) || (Integer.parseInt(user.getRoleId()) == 2)) {
             SQLDatabaseConnection.createNotaryRegistry(user);
-        }
-        else throw new InvalidRoleIdException("Such role ID does not exist");
+        } else throw new InvalidRoleIdException("Such role ID does not exist");
     }
+
     @PostMapping("/login-notary-registry")
     public String loginNotaryRegistry(@RequestBody NotaryRegistryLoginDTO user) throws IOException, InvalidRoleIdException {
         if ((Integer.parseInt(user.getRoleId()) == 1) || (Integer.parseInt(user.getRoleId()) == 2)) {
             return SQLDatabaseConnection.notaryRegistryLogin(user);
-        }
-        else throw new InvalidRoleIdException("Such role ID does not exist");
+        } else throw new InvalidRoleIdException("Such role ID does not exist");
     }
 }

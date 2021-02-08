@@ -4,14 +4,12 @@ public class CreateWillDTO {
 
     private String email;
     private KYC kyc;
-    private String document;
 
     public CreateWillDTO() {}
 
-    public CreateWillDTO(String email, KYC kyc, String document) {
+    public CreateWillDTO(String email, KYC kyc) {
         this.email = email;
         this.kyc = kyc;
-        this.document = document;
     }
 
     public String getEmail() {
@@ -22,7 +20,4 @@ public class CreateWillDTO {
         return kyc;
     }
 
-    public String getDocument() {
-        return document;
-    }
 }
