@@ -8,6 +8,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.WrongPageOrderException;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -171,11 +172,57 @@ public class SQLDatabaseConnection {
 
     }
 
-    public static ArrayList<WillRequestDTO> getWillRequests() throws IOException {
+    public static ArrayList<WillRequestDTO> getWillRequests(PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
         loadProps();
         ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
         // Get all will requests
         String query = "SELECT * FROM " + prop.getProperty("requeststable") + ";";
+        if (pageAndFilterDTO != null) {
+            if (pageAndFilterDTO.getFilterDto() != null) {
+                FilterDTO filterDTO = pageAndFilterDTO.getFilterDto();
+                StringBuilder sb = new StringBuilder(query);
+                sb.deleteCharAt(query.length() - 1);
+                if (!filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().chars().allMatch(Character::isDigit)) {
+                    sb.append(" WHERE user_id = ").append(filterDTO.getAccountId());
+                }
+
+                if (!filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().chars().allMatch(Character::isDigit)) {
+                    if (sb.toString().contains("WHERE")) {
+                        sb.append(" AND ").append("recipient_id = ").append(filterDTO.getRecipientId());
+                    } else {
+                        sb.append(" WHERE recipient_id = ").append(filterDTO.getRecipientId());
+                    }
+                }
+
+                if (!filterDTO.getStatus().isEmpty() && filterDTO.getStatus().chars().allMatch(Character::isDigit)) {
+                    if (sb.toString().contains("WHERE")) {
+                        sb.append(" AND ").append("status_id = ").append(filterDTO.getStatus());
+                    } else {
+                        sb.append(" WHERE status_id = ").append(filterDTO.getStatus());
+                    }
+                }
+
+                sb.append(";");
+                query = sb.toString();
+            }
+
+            if (pageAndFilterDTO.getPageDto() != null) {
+                if ((pageAndFilterDTO.getPageDto().getOrder().equalsIgnoreCase("DESC") || pageAndFilterDTO.getPageDto().getOrder().equalsIgnoreCase("ASC")) && pageAndFilterDTO.getPageDto().getLimit() >= 1) {
+                    StringBuilder sb = new StringBuilder(query);
+                    sb.deleteCharAt(query.length() - 1);
+                    sb.append(" ORDER BY request_id ").append(pageAndFilterDTO.getPageDto().getOrder().toUpperCase());
+                    sb.append(" LIMIT ").append(pageAndFilterDTO.getPageDto().getLimit()).append(";");
+                    query = sb.toString();
+                } else {
+                    throw new WrongPageOrderException("Wrong page params");
+                }
+            }
+
+            System.out.println(query);
+
+
+        }
+
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             while (resultSet.next()) {

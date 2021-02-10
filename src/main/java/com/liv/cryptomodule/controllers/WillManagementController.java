@@ -1,8 +1,7 @@
 package com.liv.cryptomodule.controllers;
 
-import com.liv.cryptomodule.dto.CreateWillDTO;
-import com.liv.cryptomodule.dto.KYC;
-import com.liv.cryptomodule.dto.WillRequestDTO;
+import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.WrongPageOrderException;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +21,9 @@ public class WillManagementController {
         return SQLDatabaseConnection.createWill(will, file);
     }
 
-    @GetMapping("/")
-    public ArrayList<WillRequestDTO> getWills() throws IOException {
-        return SQLDatabaseConnection.getWillRequests();
+    @PostMapping(value = "/")
+    public ArrayList<WillRequestDTO> getWills(@RequestBody(required = false) PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
+        return SQLDatabaseConnection.getWillRequests(pageAndFilterDTO);
     }
 
     @GetMapping("/approve/{willId:.+}")
