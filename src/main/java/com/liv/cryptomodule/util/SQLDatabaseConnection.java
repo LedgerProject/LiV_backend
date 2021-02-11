@@ -8,6 +8,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.InvalidRoleIdException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -282,13 +283,28 @@ public class SQLDatabaseConnection {
         return new WillRequestDTO();
     }
 
-    public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException {
+    public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException {
+        String table;
 
         loadProps();
 
         Salt salt = saltPassword(user.getPassword());
 
-        String query = "INSERT INTO " + prop.getProperty("usertable") + " SET email=\"" + user.getEmail() + "\","
+        switch (Integer.parseInt(user.getRoleId())) {
+            case 0:
+                table = prop.getProperty("usertable");
+                break;
+            case 1:
+                table = prop.getProperty("notarytable");
+                break;
+            case 2:
+                table = prop.getProperty("registrytable");
+                break;
+            default:
+                throw new InvalidRoleIdException("Such role does not exist!");
+        }
+
+        String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
                 + "did=\"" + did + "\","
