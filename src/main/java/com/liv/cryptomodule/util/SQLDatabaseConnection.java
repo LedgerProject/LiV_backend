@@ -28,10 +28,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Properties;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -153,23 +150,24 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query);
     }
 
-    public static void rejectWill(String willId) throws IOException {
+    public static void rejectWill(List<WillRequestIdDTO> willIdList) throws IOException {
 
         loadProps();
 
-        String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=-1 WHERE request_id=" + willId + ";";
-        log.log(Level.INFO, "Executing query {0}", query);
-        executeUpdateToDB(query);
-
+        for(WillRequestIdDTO willId: willIdList) {
+            String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=-1 WHERE request_id=" + willId.getWillRequestId() + ";";
+            log.log(Level.INFO, "Executing query {0}", query);
+            executeUpdateToDB(query);
+        }
     }
 
-    public static void approveWill(String willId) throws IOException {
+    public static void approveWill(List<WillRequestIdDTO> willIdList) throws IOException {
         loadProps();
-
-        String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=1 WHERE request_id=" + willId + ";";
-        log.log(Level.INFO, "Executing query {0}", query);
-        executeUpdateToDB(query);
-
+        for (WillRequestIdDTO willId : willIdList) {
+            String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=1 WHERE request_id=" + willId.getWillRequestId() + ";";
+            log.log(Level.INFO, "Executing query {0}", query);
+            executeUpdateToDB(query);
+        }
     }
 
     public static ArrayList<WillRequestDTO> getWillRequests(PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {

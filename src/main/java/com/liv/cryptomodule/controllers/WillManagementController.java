@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -26,14 +27,14 @@ public class WillManagementController {
         return SQLDatabaseConnection.getWillRequests(pageAndFilterDTO);
     }
 
-    @GetMapping("/approve/{willId:.+}")
-    public void approveWill(@PathVariable String willId) throws IOException {
-        SQLDatabaseConnection.approveWill(willId);
+    @PostMapping("/approve")
+    public void approveWill(@RequestBody List<WillRequestIdDTO> willIdList) throws IOException {
+        SQLDatabaseConnection.approveWill(willIdList);
     }
 
-    @GetMapping("/reject/{willId:.+}")
-    public void rejectWill(@PathVariable String willId) throws IOException {
-        SQLDatabaseConnection.rejectWill(willId);
+    @PostMapping("/reject")
+    public void rejectWill(@RequestBody List<WillRequestIdDTO> willIdList) throws IOException {
+        SQLDatabaseConnection.rejectWill(willIdList);
     }
 
     @GetMapping("/{willId:.+}")
