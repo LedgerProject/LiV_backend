@@ -38,7 +38,7 @@ public class UserManagementController {
     public void signup(@RequestBody UserRegistrationDTO user)
             throws IOException, InvalidKeyException, NoSuchAlgorithmException, SignatureException, SQLException, InvalidRoleIdException {
         // To validate that someone created an account just concatenate their name and email and hash it
-        SignatureDTO signed = DSM.sign(user.getFirstName().toLowerCase() + user.getLastName().toLowerCase() + user.getEmail().toLowerCase(), user.getPassword());
+        SignatureDTO signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
         String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
         SQLDatabaseConnection.createUser(user, signed.getMessageHash());
     }
