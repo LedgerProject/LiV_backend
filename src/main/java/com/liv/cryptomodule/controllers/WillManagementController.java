@@ -22,7 +22,7 @@ public class WillManagementController {
         return SQLDatabaseConnection.createWill(will, file);
     }
 
-    @PostMapping(value = "/")
+    @GetMapping(value = "/")
     public ArrayList<WillRequestDTO> getWills(@RequestBody(required = false) PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
         return SQLDatabaseConnection.getWillRequests(pageAndFilterDTO);
     }
