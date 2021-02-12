@@ -290,7 +290,7 @@ public class SQLDatabaseConnection {
 
         Salt salt = saltPassword(user.getPassword());
 
-        switch (Integer.parseInt(user.getRoleId())) {
+        switch (Integer.parseInt(user.getRole())) {
             case 0:
                 table = prop.getProperty("usertable");
                 break;
@@ -310,6 +310,10 @@ public class SQLDatabaseConnection {
                 + "did=\"" + did + "\","
                 + "role_id=0;";
         log.log(Level.INFO, "Executing query {0}", query);
+
+        executeUpdateToDB(query);
+
+        query = "INSERT INTO " + prop.getProperty("kyctable") + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
 
         executeUpdateToDB(query);
     }
