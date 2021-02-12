@@ -558,7 +558,7 @@ public class SQLDatabaseConnection {
             }
             json
                     .put("account_type_id", jwt.getClaim("account_type_id").asString())
-                    .put("user_id", jwt.getClaim("id").asString())
+                    .put("user_id", jwt.getClaim("user_id").asString())
                     .put("email", jwt.getClaim("email").asString());
             String JWTClaimsJSON = json.toString();
             return JWTClaimsJSON;
