@@ -323,7 +323,7 @@ public class SQLDatabaseConnection {
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
                 + "did=\"" + did + "\","
-                + "role_id=0;";
+                + "role_id=" + Integer.parseInt(user.getRole()) + ";";
         log.log(Level.INFO, "Executing query {0}", query);
 
         executeUpdateToDB(query);
