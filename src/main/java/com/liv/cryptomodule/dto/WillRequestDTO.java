@@ -2,9 +2,12 @@ package com.liv.cryptomodule.dto;
 
 public class WillRequestDTO {
 
-    String requestId;
+    String id;
     String userId;
-    String fullName;
+    String recipientId;
+    String firstName;
+    String middleName;
+    String lastName;
     String passportId;
     String statusId;
     String did;
@@ -15,12 +18,28 @@ public class WillRequestDTO {
 
     public WillRequestDTO() {}
 
-    public String getRequestId() {
-        return requestId;
+    public WillRequestDTO(String id, String userId, String recipientId, String firstName, String middleName, String lastName, String passportId, String statusId, String did, String email, String address, String documentHash, String documentLink) {
+        this.id = id;
+        this.userId = userId;
+        this.recipientId = recipientId;
+        this.firstName = firstName;
+        this.middleName = middleName;
+        this.lastName = lastName;
+        this.passportId = passportId;
+        this.statusId = statusId;
+        this.did = did;
+        this.email = email;
+        this.address = address;
+        this.documentHash = documentHash;
+        this.documentLink = documentLink;
     }
 
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getUserId() {
@@ -31,12 +50,36 @@ public class WillRequestDTO {
         this.userId = userId;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getRecipientId() {
+        return recipientId;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setRecipientId(String recipientId) {
+        this.recipientId = recipientId;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getMiddleName() {
+        return middleName;
+    }
+
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getPassportId() {

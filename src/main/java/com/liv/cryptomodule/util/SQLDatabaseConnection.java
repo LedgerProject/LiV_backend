@@ -243,28 +243,43 @@ public class SQLDatabaseConnection {
     public static WillRequestDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
         loadProps();
 
+//        String id;
+//        String userId;
+//        String recipientId;
+//        String fullName;
+//        String passportId;
+//        String statusId;
+//        String did;
+//        String email;
+//        String address;
+//        String documentHash;
+//        String documentLink;
+
         String query = "SELECT * FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willRequestId + ";";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
 
             WillRequestDTO willRequest = new WillRequestDTO();
-            willRequest.setRequestId(resultSet.getString(1));
+            willRequest.setId(resultSet.getString(1));
             willRequest.setUserId(resultSet.getString(2));
             willRequest.setStatusId(resultSet.getString(3));
             String documentId = resultSet.getString(4);
+            willRequest.setRecipientId(resultSet.getString(5));
 
-            query = "SELECT email, did, kyc_id FROM " + prop.getProperty("usertable") + " WHERE user_id=" + resultSet.getString(2) + ";";
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty("kyctable") + " WHERE user_id=" + resultSet.getString(2) + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            willRequest.setEmail(resultSet.getString(1));
-            willRequest.setDid(resultSet.getString(2));
-            String kycId = resultSet.getString(3);
+            willRequest.setEmail(resultSet.getString(2));
+            willRequest.setDid(resultSet.getString(5));
+            String kycId = resultSet.getString(6);
 
             query = "SELECT * FROM kyc WHERE kyc_id=" + kycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            willRequest.setFullName(resultSet.getString(2) + " " + resultSet.getString(3) + " " + resultSet.getString(4));
+            willRequest.setFirstName(resultSet.getString(2));
+            willRequest.setMiddleName(resultSet.getString(3));
+            willRequest.setLastName(resultSet.getString(4));
             willRequest.setAddress(resultSet.getString(5));
             willRequest.setPassportId(resultSet.getString(6));
 
