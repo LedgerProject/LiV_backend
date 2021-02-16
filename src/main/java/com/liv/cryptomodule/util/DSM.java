@@ -32,11 +32,24 @@ public class DSM {
         return hash;
     }
 
-    public static String SHA256hex (String msg) {
+    public static String encodePK(PublicKey pk) {
+        String pkString = pk.toString();
+
+        String p = pkString.substring(42, 649);
+        String q = pkString.substring(657, 723);
+        String g = pkString.substring(731, 1338);
+        String y = pkString.substring(1345, 1953);
+        pkString = p + "\n" + q + "\n" + g + "\n" + y;
+
+        String pkEnc = Base64.getEncoder().encodeToString(pkString.getBytes());
+        return pkEnc;
+    }
+
+    public static String SHA256hex(String msg) {
         try {
             StringBuffer hexString = new StringBuffer();
             byte[] hash = hashSHA256(msg);
-            
+
             for (int i = 0; i < hash.length; i++) {
                 if ((0xff & hash[i]) < 0x10) {
                     hexString.append("0"
@@ -64,7 +77,7 @@ public class DSM {
         return salt;
     }
 
-    private static KeyPair generateKeyPair(byte[] psswdHash) throws NoSuchAlgorithmException {
+    public static KeyPair generateKeyPair(byte[] psswdHash) throws NoSuchAlgorithmException {
 
         KeyPairGenerator generator = KeyPairGenerator.getInstance("DSA");
         generator.initialize(2048, new SecureRandom(psswdHash));
@@ -89,7 +102,7 @@ public class DSM {
 
     public static boolean verify(String[] parsed)
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
-        
+
         Signature vSignature = Signature.getInstance("SHA256withDSA");
         KeyFactory keyFactory = KeyFactory.getInstance("DSA");
 
@@ -97,16 +110,16 @@ public class DSM {
         byte[] hashDecoded = Base64.getDecoder().decode(parsed[1]);
         byte[] signatureDecoded = Base64.getDecoder().decode(parsed[2]);
         String pkDecodedString = new String(pkDecoded);
-        
-        BigInteger p = new BigInteger(pkDecodedString.substring(0, 607).replaceAll("\\s",""),16);
-        BigInteger q = new BigInteger(pkDecodedString.substring(608, 674).replaceAll("\\s",""),16);
-        BigInteger g = new BigInteger(pkDecodedString.substring(675, 1282).replaceAll("\\s",""),16);
-        BigInteger y = new BigInteger(pkDecodedString.substring(1283, 1890).replaceAll("\\s",""),16);
+
+        BigInteger p = new BigInteger(pkDecodedString.substring(0, 607).replaceAll("\\s", ""), 16);
+        BigInteger q = new BigInteger(pkDecodedString.substring(608, 674).replaceAll("\\s", ""), 16);
+        BigInteger g = new BigInteger(pkDecodedString.substring(675, 1282).replaceAll("\\s", ""), 16);
+        BigInteger y = new BigInteger(pkDecodedString.substring(1283, 1890).replaceAll("\\s", ""), 16);
 
         PublicKey pkRetrieved = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
         vSignature.initVerify(pkRetrieved);
         vSignature.update(hashDecoded);
-        
+
         return vSignature.verify(signatureDecoded);
     }
 }

@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -298,7 +297,7 @@ public class SQLDatabaseConnection {
         return new WillRequestDTO();
     }
 
-    public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException {
+    public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException {
         String table;
 
         loadProps();
@@ -322,6 +321,7 @@ public class SQLDatabaseConnection {
         String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
+                + "public_key" + DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic()) + ","
                 + "did=\"" + did + "\","
                 + "role_id=" + Integer.parseInt(user.getRole()) + ";";
         log.log(Level.INFO, "Executing query {0}", query);
