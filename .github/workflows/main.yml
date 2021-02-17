@@ -47,8 +47,8 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
-      #- name: SSH rm old version
-      #  run: ssh staging 'rm ~/cryptomodule-1.1.0.jar'
+      - name: SSH rm old version
+        run: ssh staging 'rm ~/cryptomodule-1.1.0.jar'
       - name: SSH copy
         run: scp target/cryptomodule-1.1.0.jar staging:~/cryptomodule-1.1.0.jar
       - name: Upload math result
