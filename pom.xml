@@ -14,16 +14,8 @@
     <packaging>jar</packaging>
     <name>Crypto Module</name>
     <description>Crypto and blockchain connectivity module for LiV Platform</description>
-         
-         
-    <properties>
-        <kotlin.version>0.1-SNAPSHOT</kotlin.version>
-        <junit.version>4.10</junit.version>
 
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-         
-    
+
     <dependencies>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -106,23 +98,35 @@
             <version>2.4.2</version>
         </dependency>
         <dependency>
-            <groupId> nz.net.ultraq.thymeleaf</groupId>
+            <groupId>nz.net.ultraq.thymeleaf</groupId>
             <artifactId>thymeleaf-layout-dialect</artifactId>
         </dependency>
 
     </dependencies>
 
-<build>
-<plugins>
-    <plugin>
-                <artifactId>kotlin-maven-plugin</artifactId>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.4.0</version>
+                <configuration>
+                    <fork>true</fork>
+                    <mainClass>com.liv.cryptomodule.CryptoModuleApplication</mainClass>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
-                <version>${kotlin.version}</version>
-
-                <configuration><sourceDirs>
-                   < source > src/ < / source >
-               </sourceDirs></configuration>
-
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>1.2.71</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -131,33 +135,9 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
-                    <execution>
-                        <id>test-compile</id>
-                        <phase>process-test-sources</phase>
-                        <goals>
-                            <goal>test-compile</goal>
-                        </goals>
-                    </execution>
                 </executions>
             </plugin>
-    <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>2.4.0</version>
-        <configuration>
-            <fork>true</fork>
-            <mainClass>com.liv.cryptomodule.CryptoModuleApplication</mainClass>
-        </configuration>
-    </plugin>
-    <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-            <source>8</source>
-            <target>8</target>
-        </configuration>
-    </plugin>
-</plugins>
-</build>
+        </plugins>
+    </build>
 
-        </project>
+</project>
