@@ -9,7 +9,8 @@ public class NotaryRegistryDTO {
     private String pubKey;
     private String roleId; // 1 means notary, 2 means registry
 
-    public NotaryRegistryDTO() {}
+    public NotaryRegistryDTO() {
+    }
 
     public NotaryRegistryDTO(String firstName, String lastName, String password, String email, String pubKey, String roleId) {
         this.firstName = firstName;

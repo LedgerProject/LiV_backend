@@ -4,7 +4,8 @@ public class UserServicesDTO {
 
     private String email;
 
-    private UserServicesDTO() {}
+    private UserServicesDTO() {
+    }
 
     public UserServicesDTO(String email) {
         this();

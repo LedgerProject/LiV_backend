@@ -221,7 +221,7 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             while (resultSet.next()) {
                 if (resultSet.getString(2) != null) {
-                    WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString(2));
+                    WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString("request_id"));
                     willRequests.add(willRequest);
                 }
             }
@@ -238,8 +238,6 @@ public class SQLDatabaseConnection {
     public static WillRequestDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
         loadProps();
 
-        // willrequestdto мапится с бд по этим строкам снизу
-
 //        String id;
 //        String userId;
 //        String recipientId;
@@ -252,7 +250,7 @@ public class SQLDatabaseConnection {
 //        String documentHash;
 //        String documentLink;
 
-        String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id=" + willRequestId + ";";
+        String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id= " + willRequestId + ";";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
@@ -264,14 +262,14 @@ public class SQLDatabaseConnection {
             String documentId = resultSet.getString(4);
             willRequest.setRecipientId(resultSet.getString(5));
 
-            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(KYC_TABLE) + " WHERE user_id=" + resultSet.getString(2) + ";";
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + resultSet.getString(2) + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            willRequest.setEmail(resultSet.getString(2));
-            willRequest.setDid(resultSet.getString(5));
-            String kycId = resultSet.getString(6);
+            willRequest.setEmail(resultSet.getString("email"));
+            willRequest.setDid(resultSet.getString("did"));
+            String kycId = resultSet.getString("kyc_id");
 
-            query = "SELECT * FROM kyc WHERE kyc_id=" + kycId + ";";
+            query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + kycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             willRequest.setFirstName(resultSet.getString(2));
@@ -312,12 +310,12 @@ public class SQLDatabaseConnection {
                 break;
             case 1:
                 query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
-                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
                 ).append("did=\"").append(did).append("\",");
                 break;
             case 2:
                 query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
-                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
                 ).append("did=\"").append(did).append("\",");
                 break;
             default:
@@ -329,12 +327,6 @@ public class SQLDatabaseConnection {
                 + "salt=\"" + salt.getSalt() + "\","
                 + "role_id=" + roleId + ";");
 
-        /*String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
-                + "password_hash=\"" + salt.getSaltedPassword() + "\","
-                + "salt=\"" + salt.getSalt() + "\","
-                + "public_key" + DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic()) + "," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
-                + "did=\"" + did + "\","
-                + "role_id=" + Integer.parseInt(user.getRole()) + ";";*/
         log.log(Level.INFO, "Executing query {0}", query.toString());
 
         executeUpdateToDB(query.toString());

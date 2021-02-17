@@ -7,7 +7,8 @@ public class NotaryRegistryLoginDTO {
     private String password;
     private String roleId;
 
-    public NotaryRegistryLoginDTO() {}
+    public NotaryRegistryLoginDTO() {
+    }
 
     public NotaryRegistryLoginDTO(String email, String password, String roleId) {
         this.email = email;

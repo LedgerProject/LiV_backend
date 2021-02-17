@@ -9,7 +9,8 @@ public class KYC {
     private String address;
     private String passportNumber;
 
-    public KYC() {}
+    public KYC() {
+    }
 
     public KYC(String id, String firstName, String middleName, String lastName, String address, String passportNumber) {
         this.id = id;

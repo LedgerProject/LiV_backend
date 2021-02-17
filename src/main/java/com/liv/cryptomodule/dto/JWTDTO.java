@@ -4,7 +4,8 @@ public class JWTDTO {
 
     private String jwt;
 
-    private JWTDTO() {}
+    private JWTDTO() {
+    }
 
     public JWTDTO(String jwt) {
         this();

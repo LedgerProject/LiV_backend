@@ -5,7 +5,8 @@ public class UserLoginDTO {
     private String email;
     private String password;
 
-    public UserLoginDTO() {}
+    public UserLoginDTO() {
+    }
 
     public UserLoginDTO(String email, String password) {
         this.email = email;

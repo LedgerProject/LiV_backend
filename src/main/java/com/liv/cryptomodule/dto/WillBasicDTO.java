@@ -7,7 +7,8 @@ public class WillBasicDTO {
     private String passportId;
     private String status;
 
-    public WillBasicDTO() {}
+    public WillBasicDTO() {
+    }
 
     public WillBasicDTO(String id, String name, String passportId, String status) {
         this.id = id;

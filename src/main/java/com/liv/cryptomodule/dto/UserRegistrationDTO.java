@@ -6,7 +6,8 @@ public class UserRegistrationDTO {
     private String password;
     private String role;
 
-    public UserRegistrationDTO() {}
+    public UserRegistrationDTO() {
+    }
 
     public UserRegistrationDTO(String email, String password, String role) {
         this.email = email;

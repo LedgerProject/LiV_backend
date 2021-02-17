@@ -5,7 +5,8 @@ public class CreateWillDTO {
     private String senderId;
     private String recipientEmail;
 
-    public CreateWillDTO() {}
+    public CreateWillDTO() {
+    }
 
     public CreateWillDTO(String senderId, String recipientEmail) {
         this.senderId = senderId;

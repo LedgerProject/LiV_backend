@@ -8,7 +8,8 @@ public class ServiceStatusDTO {
     private String service;
     private String status;
 
-    public ServiceStatusDTO() {}
+    public ServiceStatusDTO() {
+    }
 
     public ServiceStatusDTO(String userEmail, String institution, String service, String status) {
         this.userEmail = userEmail;

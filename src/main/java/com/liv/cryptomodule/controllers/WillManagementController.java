@@ -1,6 +1,5 @@
 package com.liv.cryptomodule.controllers;
 
-import com.liv.cryptomodule.dto.CreateWillDTO;
 import com.liv.cryptomodule.dto.PageAndFilterDTO;
 import com.liv.cryptomodule.dto.WillRequestDTO;
 import com.liv.cryptomodule.dto.WillRequestIdDTO;
@@ -49,20 +48,5 @@ public class WillManagementController {
     @GetMapping("/notify/{willRequest:.+}")
     public void sendTestEmail(@PathVariable String willRequest) throws IOException, IllegalStateException {
         SQLDatabaseConnection.sendNotification(willRequest);
-        /*try {
-            EmailService.sendEmail(willRequest, "kostyanich7@gmail.com",
-                    "TestSubject", MailContentBuilder.generateMailContent(
-                            new EmailPayload("Test Mail",
-                                    "kostyanich7@gmail.com", //noreply что-то там)
-                                    "Test",// -
-                                    "Testovskij",// -
-                                    "kostiantyn.nechvolod@gmail.com",
-                                    "Konstantin",
-                                    "Nechvolod",
-                                    "http://18.192.22.193:8080/ipfs/QmaNxbQNrJdLzzd8CKRutBjMZ6GXRjvuPepLuNSsfdeJRJ")
-                    ));
-        } catch (NullPointerException e) {
-            throw new IllegalStateException("JSON payload structure is incorrect");
-        }*/
     }
 }

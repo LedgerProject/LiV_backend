@@ -16,7 +16,8 @@ public class WillRequestDTO {
     String documentHash;
     String documentLink;
 
-    public WillRequestDTO() {}
+    public WillRequestDTO() {
+    }
 
     public WillRequestDTO(String id, String userId, String recipientId, String firstName, String middleName, String lastName, String passportId, String statusId, String did, String email, String address, String documentHash, String documentLink) {
         this.id = id;
