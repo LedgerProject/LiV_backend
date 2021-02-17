@@ -9,6 +9,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
+import com.liv.cryptomodule.exception.KycNotFoundException;
+import com.liv.cryptomodule.exception.UserNotFoundException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
 import com.liv.cryptomodule.payload.EmailPayload;
 import com.liv.cryptomodule.service.EmailService;
@@ -469,6 +471,63 @@ public class SQLDatabaseConnection {
         System.out.println("Executing query: " + query);
         executeUpdateToDB(query);
         return documentId;
+    }
+
+    public static UserModelDTO getUser(String userId) throws IOException, UserNotFoundException, KycNotFoundException {
+        loadProps();
+
+        String query = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id= " + userId + ";";
+        System.out.println("Get user query -> " + query);
+        try (Connection connection = connect()) {
+            System.out.println("Executing query: " + query);
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            if (resultSet.next()) {
+                String email = resultSet.getString(2);
+                String kycId = resultSet.getString("kyc_id");
+                resultSet.close();
+                return new UserModelDTO(email, getUserKyc(kycId));
+            } else {
+                throw new UserNotFoundException("No user was found for this userId -> " + userId);
+            }
+        } catch (SQLException | IOException | ClassNotFoundException | KycNotFoundException e) {
+            e.printStackTrace();
+            if (e instanceof KycNotFoundException) {
+                throw new KycNotFoundException("No userKyc was found for this userId -> " + userId);
+            } else {
+                throw new UserNotFoundException("No user was found for this userId -> " + userId);
+            }
+        }
+    }
+
+    private static KycDTO getUserKyc(String kycId) throws IOException, KycNotFoundException {
+        loadProps();
+
+        String query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id= " + kycId + ";";
+        System.out.println("Get kyc query -> " + query);
+
+        try (Connection connection = connect()) {
+            System.out.println("Executing query: " + query);
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            if (resultSet.next()) {
+                String first_name = resultSet.getString("first_name");
+                String middle_name = resultSet.getString("middle_name");
+                String last_name = resultSet.getString("last_name");
+                String address = resultSet.getString("address");
+                String passport_number = resultSet.getString("passport_number");
+                resultSet.close();
+                return new KycDTO(first_name,
+                        middle_name,
+                        last_name,
+                        address,
+                        passport_number);
+            } else {
+                throw new KycNotFoundException("No user was found for this userId -> " + kycId);
+            }
+        } catch (SQLException | IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new KycNotFoundException("No user was found for this userId -> " + kycId);
+        }
+
     }
 
     private static String getUserPassword(String email) throws IOException {

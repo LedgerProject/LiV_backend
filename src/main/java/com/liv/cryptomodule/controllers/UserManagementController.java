@@ -1,30 +1,21 @@
 package com.liv.cryptomodule.controllers;
 
+import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.*;
+import com.liv.cryptomodule.payload.UploadFileResponse;
+import com.liv.cryptomodule.service.FileStorageService;
+import com.liv.cryptomodule.util.DSM;
+import com.liv.cryptomodule.util.SQLDatabaseConnection;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.sql.SQLException;
-
-import com.liv.cryptomodule.exception.InvalidRoleIdException;
-import com.liv.cryptomodule.exception.JWTException;
-import com.liv.cryptomodule.exception.LoginException;
-import com.liv.cryptomodule.payload.UploadFileResponse;
-import com.liv.cryptomodule.service.FileStorageService;
-import com.liv.cryptomodule.util.BIM;
-import com.liv.cryptomodule.util.DSM;
-import com.liv.cryptomodule.util.SQLDatabaseConnection;
-import com.liv.cryptomodule.dto.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.core.io.Resource;
-
-import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -78,6 +69,11 @@ public class UserManagementController {
         SQLDatabaseConnection.addKYC(kyc, fileDownloadUri);
         return new UploadFileResponse(fileName, fileDownloadUri,
                 file.getContentType(), file.getSize());
+    }
+
+    @GetMapping("/{userId:.+}")
+    public UserModelDTO getUserData(@PathVariable String userId) throws UserNotFoundException, KycNotFoundException, IOException {
+        return SQLDatabaseConnection.getUser(userId);
     }
 
     @PostMapping("/signup-notary-registry")

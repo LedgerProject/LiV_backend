@@ -6,15 +6,26 @@ public class KycDTO {
     private String middleName;
     private String lastName;
     private String passportID;
+    private String address;
     private String email;
 
-    public KycDTO() {}
+    public KycDTO() {
+    }
 
-    public KycDTO(String firstName, String middleName, String lastName, String passportID, String email) {
+    public KycDTO(String firstName, String middleName, String lastName, String address, String passportID) {
         this.firstName = firstName;
         this.middleName = middleName;
         this.lastName = lastName;
         this.passportID = passportID;
+        this.address = address;
+    }
+
+    public KycDTO(String firstName, String middleName, String lastName, String address, String passportID, String email) {
+        this.firstName = firstName;
+        this.middleName = middleName;
+        this.lastName = lastName;
+        this.passportID = passportID;
+        this.address = address;
         this.email = email;
     }
 
@@ -32,6 +43,10 @@ public class KycDTO {
 
     public String getPassportID() {
         return passportID;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     public String getEmail() {
