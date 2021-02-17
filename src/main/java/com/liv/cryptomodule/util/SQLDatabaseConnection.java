@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//TODO: Remove unused methods and maybe split into several classes
 public class SQLDatabaseConnection {
 
     private static Properties prop = new Properties();
@@ -79,44 +80,25 @@ public class SQLDatabaseConnection {
         return new Salt(salt, saltedPasswordHash);
     }
 
-    public static int createWill(CreateWillDTO will, MultipartFile file) throws IOException {
+    //TODO: Add check of whether sender_id is in the database
+    //TODO: Refactor recipient_id check
+    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException {
         loadProps();
         String latestKycId, latestDocumentId;
 
-        // Add KYC information in the database
-        String query = "INSERT INTO " + prop.getProperty(KYC_TABLE) + " SET first_name=\"" + will.getKyc().getFirstName() + "\","
-                + "middle_name=\"" + will.getKyc().getMiddleName() + "\","
-                + "last_name=\"" + will.getKyc().getLastName() + "\","
-                + "address=\"" + will.getKyc().getAddress() + "\","
-                + "passport_number=\"" + will.getKyc().getPassportNumber() + "\";";
-        log.log(Level.INFO, "Executing query {0}", query);
-        executeUpdateToDB(query);
-
-        // Assign the KYC identifier to the user
-        query = "SELECT kyc_id FROM " + prop.getProperty(KYC_TABLE) + " ORDER BY kyc_id DESC LIMIT 1";
-        try (Connection connection = connect()) {
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
-            resultSet.next();
-            latestKycId = resultSet.getString(1);
-            query = "UPDATE " + prop.getProperty(USER_TABLE) + " SET kyc_id=" + latestKycId
-                    + " WHERE email=\"" + will.getEmail() + "\";";
-            log.log(Level.INFO, "Executing query {0}", query);
-            executeUpdateToDB(query);
-        } catch (SQLException | ClassNotFoundException throwables) {
-            throwables.printStackTrace();
-        }
-
-        // Upload documents and add new doc to the database
-
         saveDocumentToIpfs(file);
-        // Add new request
-        query = "SELECT document_id FROM " + prop.getProperty(DOCS_TABLE) + " ORDER BY document_id DESC LIMIT 1";
+
+        String query = "SELECT document_id FROM " + prop.getProperty(DOCS_TABLE) + " ORDER BY document_id DESC LIMIT 1";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
-            query = "INSERT INTO " + prop.getProperty(REQUESTS_TABLE) + " SET user_id=" + getUserId(will.getEmail()) + ","
-                    + "status_id=0, document_id=" + latestDocumentId + ";";
+
+            String recipientId = SQLDatabaseConnection.getUserId(recipientEmail);
+
+            query = "INSERT INTO " + prop.getProperty(REQUESTS_TABLE) + " SET user_id=" + senderId + ","
+                    + "status_id=0, document_id=" + latestDocumentId
+                    + ", recipient_id=" + recipientId + ";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
             return 0;
@@ -573,11 +555,14 @@ public class SQLDatabaseConnection {
         System.out.println("Executing query: " + getUserIdQuery);
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(getUserIdQuery);
-            resultSet.next();
-            String userId = resultSet.getString(1);
-            resultSet.close();
-            return userId;
-        } catch (SQLException | IOException | ClassNotFoundException e) {
+            if (resultSet.next()) {
+                String userId = resultSet.getString(1);
+                resultSet.close();
+                return userId;
+            } else {
+                throw new UserNotFoundException("There is no such user");
+            }
+        } catch (SQLException | IOException | ClassNotFoundException | UserNotFoundException e) {
             e.printStackTrace();
         }
         return null;

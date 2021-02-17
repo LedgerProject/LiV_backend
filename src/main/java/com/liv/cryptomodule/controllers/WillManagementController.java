@@ -19,10 +19,9 @@ import java.util.List;
 @RequestMapping(value = "/will-requests")
 public class WillManagementController {
 
-    @PostMapping(value = "/create", consumes = {MediaType.APPLICATION_JSON_VALUE,
-            MediaType.MULTIPART_FORM_DATA_VALUE})
-    public int createWill(@RequestPart(value = "will", required = true) CreateWillDTO will, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException {
-        return SQLDatabaseConnection.createWill(will, file);
+    @PostMapping(value = "/create", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public int createWill(@RequestPart(value = "sender_id", required = true) String senderId, @RequestPart(value = "recipient_email", required = true) String recipientEmail, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException {
+        return SQLDatabaseConnection.createWill(senderId, recipientEmail, file);
     }
 
     @GetMapping(value = "/")

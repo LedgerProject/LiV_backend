@@ -2,22 +2,21 @@ package com.liv.cryptomodule.dto;
 
 public class CreateWillDTO {
 
-    private String email;
-    private KYC kyc;
+    private String senderId;
+    private String recipientEmail;
 
     public CreateWillDTO() {}
 
-    public CreateWillDTO(String email, KYC kyc) {
-        this.email = email;
-        this.kyc = kyc;
+    public CreateWillDTO(String senderId, String recipientEmail) {
+        this.senderId = senderId;
+        this.recipientEmail = recipientEmail;
     }
 
-    public String getEmail() {
-        return email;
+    public String getSenderId() {
+        return senderId;
     }
 
-    public KYC getKyc() {
-        return kyc;
+    public String getRecipientEmail() {
+        return recipientEmail;
     }
-
 }
