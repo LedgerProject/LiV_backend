@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.InvalidRoleIdException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
+import com.liv.cryptomodule.payload.EmailPayload;
+import com.liv.cryptomodule.service.EmailService;
+import com.liv.cryptomodule.service.MailContentBuilder;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -23,7 +26,9 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -41,6 +46,14 @@ public class SQLDatabaseConnection {
     private static final String IPFS_URL = "http://18.192.22.193:8080/ipfs/";
     private static final String IPFS_BASE_URL = "http://18.192.22.193:5001";
     private static final String ADD_FILE_ENDPOINT = "/api/v0/add";
+
+    private static final String USER_TABLE = "usertable";
+    private static final String NOTARY_TABLE = "notarytable";
+    private static final String REGISTRY_TABLE = "registrytable";
+    private static final String KYC_TABLE = "kyctable";
+    private static final String DOCS_TABLE = "docstable";
+    private static final String REQUESTS_TABLE = "requeststable";
+    private static final String STATUSES_TABLE = "statustable";
 
     private static void loadProps() throws IOException {
         InputStream input = SQLDatabaseConnection.class.getClassLoader().getResourceAsStream("config.properties");
@@ -69,7 +82,7 @@ public class SQLDatabaseConnection {
         String latestKycId, latestDocumentId;
 
         // Add KYC information in the database
-        String query = "INSERT INTO " + prop.getProperty("kyctable") + " SET first_name=\"" + will.getKyc().getFirstName() + "\","
+        String query = "INSERT INTO " + prop.getProperty(KYC_TABLE) + " SET first_name=\"" + will.getKyc().getFirstName() + "\","
                 + "middle_name=\"" + will.getKyc().getMiddleName() + "\","
                 + "last_name=\"" + will.getKyc().getLastName() + "\","
                 + "address=\"" + will.getKyc().getAddress() + "\","
@@ -78,12 +91,12 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query);
 
         // Assign the KYC identifier to the user
-        query = "SELECT kyc_id FROM " + prop.getProperty("kyctable") + " ORDER BY kyc_id DESC LIMIT 1";
+        query = "SELECT kyc_id FROM " + prop.getProperty(KYC_TABLE) + " ORDER BY kyc_id DESC LIMIT 1";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestKycId = resultSet.getString(1);
-            query = "UPDATE " + prop.getProperty("usertable") + " SET kyc_id=" + latestKycId
+            query = "UPDATE " + prop.getProperty(USER_TABLE) + " SET kyc_id=" + latestKycId
                     + " WHERE email=\"" + will.getEmail() + "\";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
@@ -95,12 +108,12 @@ public class SQLDatabaseConnection {
 
         saveDocumentToIpfs(file);
         // Add new request
-        query = "SELECT document_id FROM " + prop.getProperty("docstable") + " ORDER BY document_id DESC LIMIT 1";
+        query = "SELECT document_id FROM " + prop.getProperty(DOCS_TABLE) + " ORDER BY document_id DESC LIMIT 1";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
-            query = "INSERT INTO " + prop.getProperty("requeststable") + " SET user_id=" + getUserId(will.getEmail()) + ","
+            query = "INSERT INTO " + prop.getProperty(REQUESTS_TABLE) + " SET user_id=" + getUserId(will.getEmail()) + ","
                     + "status_id=0, document_id=" + latestDocumentId + ";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
@@ -144,18 +157,17 @@ public class SQLDatabaseConnection {
     private static void addDocumentToDb(String ipfsDocumentHash) throws IOException {
         loadProps();
 
-        String query = "INSERT INTO " + prop.getProperty("docstable") + " SET hash=\"" + ipfsDocumentHash + "\","
+        String query = "INSERT INTO " + prop.getProperty(DOCS_TABLE) + " SET hash=\"" + ipfsDocumentHash + "\","
                 + "path=\"" + IPFS_URL + ipfsDocumentHash + "\";";
         log.log(Level.INFO, "Executing query {0}", query);
         executeUpdateToDB(query);
     }
 
     public static void rejectWill(List<WillRequestIdDTO> willIdList) throws IOException {
-
         loadProps();
 
-        for(WillRequestIdDTO willId: willIdList) {
-            String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=-1 WHERE request_id=" + willId.getWillRequestId() + ";";
+        for (WillRequestIdDTO willId : willIdList) {
+            String query = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id=-1 WHERE request_id=" + willId.getWillRequestId() + ";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
         }
@@ -163,8 +175,9 @@ public class SQLDatabaseConnection {
 
     public static void approveWill(List<WillRequestIdDTO> willIdList) throws IOException {
         loadProps();
+
         for (WillRequestIdDTO willId : willIdList) {
-            String query = "UPDATE " + prop.getProperty("requeststable") + " SET status_id=1 WHERE request_id=" + willId.getWillRequestId() + ";";
+            String query = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id=1 WHERE request_id=" + willId.getWillRequestId() + ";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
         }
@@ -172,9 +185,10 @@ public class SQLDatabaseConnection {
 
     public static ArrayList<WillRequestDTO> getWillRequests(PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
         loadProps();
+
         ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
         // Get all will requests
-        String query = "SELECT * FROM " + prop.getProperty("requeststable") + ";";
+        String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + ";";
         if (pageAndFilterDTO != null) {
             if (pageAndFilterDTO.getFilterDto() != null) {
                 FilterDTO filterDTO = pageAndFilterDTO.getFilterDto();
@@ -217,8 +231,6 @@ public class SQLDatabaseConnection {
             }
 
             System.out.println(query);
-
-
         }
 
         try (Connection connection = connect()) {
@@ -242,6 +254,8 @@ public class SQLDatabaseConnection {
     public static WillRequestDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
         loadProps();
 
+        // willrequestdto мапится с бд по этим строкам снизу
+
 //        String id;
 //        String userId;
 //        String recipientId;
@@ -254,7 +268,7 @@ public class SQLDatabaseConnection {
 //        String documentHash;
 //        String documentLink;
 
-        String query = "SELECT * FROM " + prop.getProperty("requeststable") + " WHERE request_id=" + willRequestId + ";";
+        String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id=" + willRequestId + ";";
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
@@ -266,7 +280,7 @@ public class SQLDatabaseConnection {
             String documentId = resultSet.getString(4);
             willRequest.setRecipientId(resultSet.getString(5));
 
-            query = "SELECT email, did, kyc_id FROM " + prop.getProperty("kyctable") + " WHERE user_id=" + resultSet.getString(2) + ";";
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(KYC_TABLE) + " WHERE user_id=" + resultSet.getString(2) + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             willRequest.setEmail(resultSet.getString(2));
@@ -282,7 +296,7 @@ public class SQLDatabaseConnection {
             willRequest.setAddress(resultSet.getString(5));
             willRequest.setPassportId(resultSet.getString(6));
 
-            query = "SELECT * FROM " + prop.getProperty("docstable") + " WHERE document_id=" + documentId + ";";
+            query = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id=" + documentId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
             willRequest.setDocumentHash(resultSet.getString(2));
@@ -304,33 +318,46 @@ public class SQLDatabaseConnection {
 
         Salt salt = saltPassword(user.getPassword());
 
-        switch (Integer.parseInt(user.getRole())) {
+        StringBuilder query = new StringBuilder("INSERT INTO ");
+
+        int roleId = Integer.parseInt(user.getRole());
+
+        switch (roleId) {
             case 0:
-                table = prop.getProperty("usertable");
+                query.append(prop.getProperty(USER_TABLE)).append(" SET ");
                 break;
             case 1:
-                table = prop.getProperty("notarytable");
+                query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
+                ).append("did=\"").append(did).append("\",");
                 break;
             case 2:
-                table = prop.getProperty("registrytable");
+                query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
+                ).append("did=\"").append(did).append("\",");
                 break;
             default:
                 throw new InvalidRoleIdException("Such role does not exist!");
         }
 
-        String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
+        query.append(" email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
-                + "public_key" + DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic()) + ","
+                + "role_id=" + roleId + ";");
+
+        /*String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
+                + "password_hash=\"" + salt.getSaltedPassword() + "\","
+                + "salt=\"" + salt.getSalt() + "\","
+                + "public_key" + DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic()) + "," // publiс key и did сетить только для нотариуса и реестра. Чекнуть правильность ключа в базе и вообще
                 + "did=\"" + did + "\","
-                + "role_id=" + Integer.parseInt(user.getRole()) + ";";
-        log.log(Level.INFO, "Executing query {0}", query);
+                + "role_id=" + Integer.parseInt(user.getRole()) + ";";*/
+        log.log(Level.INFO, "Executing query {0}", query.toString());
 
-        executeUpdateToDB(query);
+        executeUpdateToDB(query.toString());
 
-        query = "INSERT INTO " + prop.getProperty("kyctable") + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
+        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
 
-        executeUpdateToDB(query);
+        executeUpdateToDB(queryKyc);
     }
 
     public static void createNotaryRegistry(NotaryRegistryDTO user) throws IOException {
@@ -339,9 +366,9 @@ public class SQLDatabaseConnection {
         Salt salt = saltPassword(user.getPassword());
 
         if (Integer.parseInt(user.getRoleId()) == 1) {
-            table = prop.getProperty("notarytable");
+            table = prop.getProperty(NOTARY_TABLE);
         } else {
-            table = prop.getProperty("registrytable");
+            table = prop.getProperty(REGISTRY_TABLE);
         }
 
         String query = "INSERT INTO " + table + " SET email=\"" + user.getEmail() + "\","
@@ -371,7 +398,7 @@ public class SQLDatabaseConnection {
 //        BigInteger salt = DSM.generateSalt();
 //        String saltedPassword = user.getPassword() + "." + salt;
 //        String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
-        String query = "SELECT password_hash, salt FROM " + prop.getProperty("usertable") + " WHERE email=\"" + user.getEmail() + "\";";
+        String query = "SELECT password_hash, salt FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
         System.out.println("Executing query: " + query);
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
@@ -394,7 +421,7 @@ public class SQLDatabaseConnection {
 
         loadProps();
 
-        String query = "SELECT email FROM " + prop.getProperty("usertable") +
+        String query = "SELECT email FROM " + prop.getProperty(USER_TABLE) +
                 " WHERE email=\"" + user.getEmail() + "\";";
         System.out.println("Executing query: " + query);
         try (Connection connection = connect()) {
@@ -413,7 +440,7 @@ public class SQLDatabaseConnection {
 
         loadProps();
 
-        String setQuery = "INSERT INTO " + prop.getProperty("statustable") + " SET " +
+        String setQuery = "INSERT INTO " + prop.getProperty(STATUSES_TABLE) + " SET " +
                 "user_id=\"" + getUserId(serviceStatus.getUserEmail()) + "\","
                 + "institution=\"" + serviceStatus.getInstitution() + "\","
                 + "service=\"" + serviceStatus.getService() + "\","
@@ -429,7 +456,7 @@ public class SQLDatabaseConnection {
         SignatureDTO signature = DSM.sign(fileHash, userPassword);
         System.out.println(BIM.storeEventHash(fileHash, signature.getPK(), signature.getSignatureValue()));
         String documentId = BIM.mintDocumentToken();
-        String query = "INSERT INTO " + prop.getProperty("kyctable") + " SET " +
+        String query = "INSERT INTO " + prop.getProperty(KYC_TABLE) + " SET " +
                 "user_id=\"" + getUserId(kyc.getEmail()) + "\","
                 + "first_name=\"" + kyc.getFirstName() + "\","
                 + "middle_name=\"" + kyc.getMiddleName() + "\","
@@ -446,7 +473,7 @@ public class SQLDatabaseConnection {
 
     private static String getUserPassword(String email) throws IOException {
         loadProps();
-        String query = "SELECT password_hash FROM " + prop.getProperty("usertable") + " WHERE id =" +
+        String query = "SELECT password_hash FROM " + prop.getProperty(USER_TABLE) + " WHERE id =" +
                 "\"" + getUserId(email) + "\";";
         try (Connection connection = connect()) {
             System.out.println("Executing query: " + query);
@@ -464,7 +491,7 @@ public class SQLDatabaseConnection {
     public static ArrayList<ServiceStatusDTO> getUserServices(UserServicesDTO user) throws IOException {
         loadProps();
         ArrayList<ServiceStatusDTO> statuses = new ArrayList<>();
-        String query = "SELECT * FROM " + prop.getProperty("statustable") + " WHERE " +
+        String query = "SELECT * FROM " + prop.getProperty(STATUSES_TABLE) + " WHERE " +
                 "user_id=\"" + getUserId(user.getEmail()) + "\"";
         try (Connection connection = connect()) {
             System.out.println("Executing query: " + query);
@@ -482,7 +509,7 @@ public class SQLDatabaseConnection {
 
     private static String getUserId(String userEmail) throws IOException {
         loadProps();
-        String getUserIdQuery = "SELECT user_id FROM " + prop.getProperty("usertable") + " WHERE email=\""
+        String getUserIdQuery = "SELECT user_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\""
                 + userEmail + "\";";
         System.out.println("Executing query: " + getUserIdQuery);
         try (Connection connection = connect()) {
@@ -500,7 +527,7 @@ public class SQLDatabaseConnection {
     public static String login(UserLoginDTO user) throws IOException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
-            String query = "SELECT user_id FROM " + prop.getProperty("usertable") + " WHERE email=\"" + user.getEmail() + "\";";
+            String query = "SELECT user_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
             try (Connection connection = connect()) {
                 ResultSet resultSet = connection.createStatement().executeQuery(query);
@@ -520,10 +547,10 @@ public class SQLDatabaseConnection {
         String table, columnName;
 
         if (Integer.parseInt(user.getRoleId()) == 1) {
-            table = prop.getProperty("notarytable");
+            table = prop.getProperty(NOTARY_TABLE);
             columnName = "notary_id";
         } else {
-            table = prop.getProperty("registrytable");
+            table = prop.getProperty(REGISTRY_TABLE);
             columnName = "registry_id";
         }
 
@@ -583,6 +610,59 @@ public class SQLDatabaseConnection {
             return JWTClaimsJSON;
         } catch (JWTDecodeException e) {
             return null;
+        }
+    }
+
+    public static void sendNotification(String willId) throws IOException {
+        loadProps();
+
+        String recipientEmail;
+        String recipientFirstName;
+        String recipientLastName;
+        String documentId;
+        String documentUrl;
+
+        String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id =" + willId + ";";
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            resultSet.next();
+            String creatorId = resultSet.getString(2);
+            documentId = resultSet.getString(2);
+            String recipientId = resultSet.getString(5);
+
+            String userQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id =" + recipientId + ";";
+            resultSet = connection.createStatement().executeQuery(userQuery);
+            resultSet.next();
+            recipientEmail = resultSet.getString(2);
+            String kycId = resultSet.getString(6);
+
+            String kycQuery = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id =" + kycId + ";";
+            resultSet = connection.createStatement().executeQuery(kycQuery);
+            resultSet.next();
+            recipientFirstName = resultSet.getString(2);
+            recipientLastName = resultSet.getString(4);
+
+            String docQuery = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id =" + documentId + ";";
+            resultSet = connection.createStatement().executeQuery(docQuery);
+            resultSet.next();
+            documentUrl = resultSet.getString(3);
+
+            try {
+                EmailService.sendEmail(recipientEmail, "kostyanich7@gmail.com",
+                        "TestSubject", MailContentBuilder.generateMailContent(
+                                new EmailPayload("Test Mail",
+                                        "kostiantyn.nechvolod@gmail.com",
+                                        recipientFirstName,
+                                        recipientLastName,
+                                        documentUrl
+                                )
+                        ));
+            } catch (NullPointerException e) {
+                throw new IllegalStateException("JSON payload structure is incorrect");
+            }
+
+        } catch (SQLException | ClassNotFoundException throwables) {
+            throwables.printStackTrace();
         }
     }
 }

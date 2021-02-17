@@ -1,5 +1,6 @@
 HELP.md
-src/main/resources/**
+src/main/resources/*
+!src/main/resources/mail-templates
 .idea/
 out/
 target/
