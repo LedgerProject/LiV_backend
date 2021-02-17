@@ -58,9 +58,10 @@ public class UserManagementController {
     @RequestMapping(value = "/addKYC", method = RequestMethod.POST, consumes = {"multipart/form-data"})
     public UploadFileResponse addKYC(@RequestPart("firstName") String firstName, @RequestPart("middleName") String middleName,
                                      @RequestPart("lastName") String lastName, @RequestPart("passportID") String passportId, @RequestPart("email") String email,
+                                     @RequestPart("address") String address,
                                      @RequestPart("file") MultipartFile file)
             throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        KycDTO kyc = new KycDTO(firstName, middleName, lastName, passportId, email);
+        KycDTO kyc = new KycDTO(firstName, middleName, lastName, passportId, address, email);
         String fileName = fileStorageService.storeFile(file);
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/downloadFile/")

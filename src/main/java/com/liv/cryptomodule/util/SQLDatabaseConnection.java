@@ -438,6 +438,7 @@ public class SQLDatabaseConnection {
                 + "middle_name=\"" + kyc.getMiddleName() + "\","
                 + "last_name=\"" + kyc.getLastName() + "\","
                 + "passport_id=\"" + kyc.getPassportID() + "\","
+                + "address=\"" + kyc.getAddress() + "\","
                 + "email=\"" + kyc.getEmail() + "\","
                 + "document_id=\"" + documentId + "\","
                 + "file_hash=\"" + fileHash + "\","
