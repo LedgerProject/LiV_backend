@@ -29,8 +29,8 @@ jobs:
         with:
           java-version: 11
       - name: Build with Maven
-        #run: mvn package
-        run: mvn kotlin:compile
+        run: mvn package
+        #run: mvn kotlin:compile
       - name: Configure SSH
         run: |
             mkdir -p ~/.ssh/
@@ -47,8 +47,8 @@ jobs:
             SSH_USER: ${{ secrets.SSH_USER }}
             SSH_KEY: ${{ secrets.PRIVATE_KEY}}
             SSH_HOST: ${{ secrets.HOST }}
-      - name: SSH rm old version
-        run: ssh staging 'rm ~/cryptomodule-1.1.0.jar'
+      #- name: SSH rm old version
+      #  run: ssh staging 'rm ~/cryptomodule-1.1.0.jar'
       - name: SSH copy
         run: scp target/cryptomodule-1.1.0.jar staging:~/cryptomodule-1.1.0.jar
       - name: Upload math result
