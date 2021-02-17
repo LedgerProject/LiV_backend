@@ -15,6 +15,14 @@
     <name>Crypto Module</name>
     <description>Crypto and blockchain connectivity module for LiV Platform</description>
          
+         
+    <properties>
+        <kotlin.version>0.1-SNAPSHOT</kotlin.version>
+        <junit.version>4.10</junit.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+         
     
     <dependencies>
         <dependency>
@@ -106,6 +114,32 @@
 
 <build>
 <plugins>
+    <plugin>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <version>${kotlin.version}</version>
+
+                <configuration><sourceDirs>
+                   < source > src/ < / source >
+               </sourceDirs></configuration>
+
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
     <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
