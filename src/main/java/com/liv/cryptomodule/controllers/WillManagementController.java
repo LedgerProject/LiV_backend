@@ -3,6 +3,7 @@ package com.liv.cryptomodule.controllers;
 import com.liv.cryptomodule.dto.PageAndFilterDTO;
 import com.liv.cryptomodule.dto.WillRequestDTO;
 import com.liv.cryptomodule.dto.WillRequestIdDTO;
+import com.liv.cryptomodule.exception.UserNotFoundException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ import java.util.List;
 public class WillManagementController {
 
     @PostMapping(value = "/create", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public int createWill(@RequestPart(value = "sender_id", required = true) String senderId, @RequestPart(value = "recipient_email", required = true) String recipientEmail, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException {
+    public int createWill(@RequestPart(value = "sender_id", required = true) String senderId, @RequestPart(value = "recipient_email", required = true) String recipientEmail, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
         return SQLDatabaseConnection.createWill(senderId, recipientEmail, file);
     }
 
