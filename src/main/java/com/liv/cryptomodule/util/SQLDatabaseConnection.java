@@ -82,9 +82,34 @@ public class SQLDatabaseConnection {
 
     //TODO: Add check of whether sender_id is in the database
     //TODO: Refactor recipient_id check
-    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException {
+    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
         loadProps();
         String latestKycId, latestDocumentId;
+
+        String senderQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id= " + senderId + ";";
+        String recipientQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + recipientEmail + "\";";
+
+        try (Connection connection = connect()){
+
+            System.out.println("Executing query: " + senderQuery);
+            ResultSet resultSet = connection.createStatement().executeQuery(senderQuery);
+            if (resultSet.next()) {
+                resultSet.close();
+            } else {
+                throw new UserNotFoundException("No user was found for this userId -> " + senderId);
+            }
+            resultSet = connection.createStatement().executeQuery(recipientQuery);
+            if (resultSet.next()) {
+                resultSet.close();
+            } else {
+                throw new UserNotFoundException("No user was found for this email -> " + recipientEmail);
+            }
+        } catch (SQLException | ClassNotFoundException | UserNotFoundException e) {
+            e.printStackTrace();
+            if(e instanceof UserNotFoundException){
+                throw e;
+            }
+        }
 
         saveDocumentToIpfs(file);
 
