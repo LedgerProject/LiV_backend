@@ -334,6 +334,19 @@ public class SQLDatabaseConnection {
         String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
 
         executeUpdateToDB(queryKyc);
+
+        String kycQuery = "SELECT kyc_id FROM kyc ORDER BY kyc_id DESC";
+
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(kycQuery);
+            resultSet.next();
+            String assignKyc = "UPDATE 'users' SET 'kyc_id' = '" + resultSet.getString(1) + "' WHERE 'users' = " + getUserId(user.getEmail());
+            executeUpdateToDB(assignKyc);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     public static void createNotaryRegistry(NotaryRegistryDTO user) throws IOException {
