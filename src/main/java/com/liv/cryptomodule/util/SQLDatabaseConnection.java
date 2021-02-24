@@ -89,7 +89,7 @@ public class SQLDatabaseConnection {
         String senderQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id= " + senderId + ";";
         String recipientQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + recipientEmail + "\";";
 
-        try (Connection connection = connect()){
+        try (Connection connection = connect()) {
 
             System.out.println("Executing query: " + senderQuery);
             ResultSet resultSet = connection.createStatement().executeQuery(senderQuery);
@@ -106,7 +106,7 @@ public class SQLDatabaseConnection {
             }
         } catch (SQLException | ClassNotFoundException | UserNotFoundException e) {
             e.printStackTrace();
-            if(e instanceof UserNotFoundException){
+            if (e instanceof UserNotFoundException) {
                 throw e;
             }
         }
@@ -203,11 +203,11 @@ public class SQLDatabaseConnection {
                 FilterDTO filterDTO = pageAndFilterDTO.getFilterDto();
                 StringBuilder sb = new StringBuilder(query);
                 sb.deleteCharAt(query.length() - 1);
-                if (!filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getAccountId() != null && !filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().chars().allMatch(Character::isDigit)) {
                     sb.append(" WHERE user_id = ").append(filterDTO.getAccountId());
                 }
 
-                if (!filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getRecipientId() != null && !filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().chars().allMatch(Character::isDigit)) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("recipient_id = ").append(filterDTO.getRecipientId());
                     } else {
@@ -215,7 +215,7 @@ public class SQLDatabaseConnection {
                     }
                 }
 
-                if (!filterDTO.getStatus().isEmpty() && filterDTO.getStatus().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getStatus() != null && !filterDTO.getStatus().isEmpty() && filterDTO.getStatus().chars().allMatch(Character::isDigit)) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("status_id = ").append(filterDTO.getStatus());
                     } else {
@@ -228,19 +228,30 @@ public class SQLDatabaseConnection {
             }
 
             if (pageAndFilterDTO.getPageDto() != null) {
-                if ((pageAndFilterDTO.getPageDto().getOrder().equalsIgnoreCase("DESC") || pageAndFilterDTO.getPageDto().getOrder().equalsIgnoreCase("ASC")) && pageAndFilterDTO.getPageDto().getLimit() >= 1) {
+                if (pageAndFilterDTO.getPageDto().getOrder() != null) {
+                    if (("DESC".equalsIgnoreCase(pageAndFilterDTO.getPageDto().getOrder()) || "ASC".equalsIgnoreCase(pageAndFilterDTO.getPageDto().getOrder()))) {
+                        StringBuilder sb = new StringBuilder(query);
+                        sb.deleteCharAt(query.length() - 1);
+                        sb.append(" ORDER BY request_id ").append(pageAndFilterDTO.getPageDto().getOrder().toUpperCase()).append(";");
+
+                        query = sb.toString();
+                    } else {
+                        throw new WrongPageOrderException("Wrong page params");
+                    }
+                }
+
+                if (pageAndFilterDTO.getPageDto().getLimit() != null && pageAndFilterDTO.getPageDto().getLimit() >= 1) {
                     StringBuilder sb = new StringBuilder(query);
-                    sb.deleteCharAt(query.length() - 1);
-                    sb.append(" ORDER BY request_id ").append(pageAndFilterDTO.getPageDto().getOrder().toUpperCase());
+                    if (sb.toString().contains(";")) {
+                        sb.deleteCharAt(query.length() - 1);
+                    }
                     sb.append(" LIMIT ").append(pageAndFilterDTO.getPageDto().getLimit()).append(";");
                     query = sb.toString();
-                } else {
-                    throw new WrongPageOrderException("Wrong page params");
                 }
             }
-
-            System.out.println(query);
         }
+
+        System.out.println(query);
 
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(query);

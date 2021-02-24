@@ -1,8 +1,6 @@
 package com.liv.cryptomodule.controllers;
 
-import com.liv.cryptomodule.dto.PageAndFilterDTO;
-import com.liv.cryptomodule.dto.WillRequestDTO;
-import com.liv.cryptomodule.dto.WillRequestIdDTO;
+import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.UserNotFoundException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
@@ -26,8 +24,43 @@ public class WillManagementController {
     }
 
     @GetMapping(value = "/")
-    public ArrayList<WillRequestDTO> getWills(@RequestBody(required = false) PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
-        return SQLDatabaseConnection.getWillRequests(pageAndFilterDTO);
+    public ArrayList<WillRequestDTO> getWills(
+            @RequestParam(value = "pageOrder", required = false) String pageOrder,
+            @RequestParam(value = "pageLimit", required = false) Integer pageLimit,
+            @RequestParam(value = "ownerId", required = false) String ownerId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "recipientId", required = false) String recipientId) throws IOException, WrongPageOrderException {
+
+        PageDTO pageDTO = null;
+        FilterDTO filterDTO = null;
+        PageAndFilterDTO pageAndFilterDTO = null;
+
+        if(pageOrder != null || pageLimit != null){
+            pageDTO = new PageDTO(
+                    pageOrder,
+                    pageLimit
+            );
+        }
+
+        if(ownerId != null || status != null || recipientId != null){
+            filterDTO = new FilterDTO(
+                    ownerId,
+                    status,
+                    recipientId
+            );
+        }
+
+        if(pageDTO != null || filterDTO != null){
+            pageAndFilterDTO = new PageAndFilterDTO(
+                    pageDTO,
+                    filterDTO
+            );
+        }
+
+
+        return SQLDatabaseConnection.getWillRequests(
+                pageAndFilterDTO
+        );
     }
 
     @PostMapping("/approve")
