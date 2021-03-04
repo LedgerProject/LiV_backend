@@ -46,6 +46,7 @@ public class UserManagementController {
     }
 
     @PostMapping("/verifyJWT")
+    // TODO: 03.03.2021 remove endpoint and add validation according to header auth token in each request
     public String veryfyJWT(@RequestBody JWTDTO jwt) throws JWTException {
         String decodedJwt = SQLDatabaseConnection.verifyJWT(jwt.getJwt());
         if (decodedJwt != null) {

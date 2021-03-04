@@ -1,19 +1,22 @@
 package com.liv.cryptomodule.dto
 
 data class UserModelDTO(
-        val email: String,
-        val first_name: String,
-        val middle_name: String,
-        val last_name: String,
-        val address: String,
-        val passport_number: String
+        var id: String = "",
+        var email: String = "",
+        var did: String? = "",
+        var firstName: String = "",
+        var middleName: String = "",
+        var lastName: String = "",
+        var address: String = "",
+        var passportNumber: String = ""
 ) {
-    constructor(email: String, kycDTO: KycDTO) : this(
+    constructor(id: String, email: String, kycDTO: KycDTO) : this(
+            id = id,
             email = email,
-            first_name = kycDTO.firstName,
-            middle_name = kycDTO.middleName,
-            last_name = kycDTO.lastName,
+            firstName = kycDTO.firstName,
+            middleName = kycDTO.middleName,
+            lastName = kycDTO.lastName,
             address = kycDTO.address,
-            passport_number = kycDTO.passportID
+            passportNumber = kycDTO.passportID
     )
 }

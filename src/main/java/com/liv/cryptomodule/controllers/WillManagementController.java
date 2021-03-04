@@ -24,7 +24,7 @@ public class WillManagementController {
     }
 
     @GetMapping(value = "/")
-    public ArrayList<WillRequestDTO> getWills(
+    public ArrayList<WillRequestResponseDTO> getWills(
             @RequestParam(value = "pageOrder", required = false) String pageOrder,
             @RequestParam(value = "pageLimit", required = false) Integer pageLimit,
             @RequestParam(value = "ownerId", required = false) String ownerId,
@@ -74,7 +74,7 @@ public class WillManagementController {
     }
 
     @GetMapping("/{willId:.+}")
-    public WillRequestDTO getWillDetails(@PathVariable String willId) throws IOException {
+    public WillRequestResponseDTO getWillDetails(@PathVariable String willId) throws IOException {
         return SQLDatabaseConnection.getWillRequestDetails(willId);
     }
 

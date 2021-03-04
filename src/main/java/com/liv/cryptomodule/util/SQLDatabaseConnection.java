@@ -192,10 +192,10 @@ public class SQLDatabaseConnection {
         }
     }
 
-    public static ArrayList<WillRequestDTO> getWillRequests(PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
+    public static ArrayList<WillRequestResponseDTO> getWillRequests(PageAndFilterDTO pageAndFilterDTO) throws IOException, WrongPageOrderException {
         loadProps();
 
-        ArrayList<WillRequestDTO> willRequests = new ArrayList<>();
+        ArrayList<WillRequestResponseDTO> willRequests = new ArrayList<>();
         // Get all will requests
         String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + ";";
         if (pageAndFilterDTO != null) {
@@ -257,7 +257,7 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             while (resultSet.next()) {
                 if (resultSet.getString(2) != null) {
-                    WillRequestDTO willRequest = getWillRequestDetails(resultSet.getString("request_id"));
+                    WillRequestResponseDTO willRequest = getWillRequestDetails(resultSet.getString("request_id"));
                     willRequests.add(willRequest);
                 }
             }
@@ -271,7 +271,7 @@ public class SQLDatabaseConnection {
         return new ArrayList<>();
     }
 
-    public static WillRequestDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
+    public static WillRequestResponseDTO getWillRequestDetails(@NotNull String willRequestId) throws IOException {
         loadProps();
 
 //        String id;
@@ -291,28 +291,54 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
 
-            WillRequestDTO willRequest = new WillRequestDTO();
+            WillRequestResponseDTO willRequest = new WillRequestResponseDTO();
             willRequest.setId(resultSet.getString(1));
-            willRequest.setUserId(resultSet.getString(2));
             willRequest.setStatusId(resultSet.getString(3));
             String documentId = resultSet.getString(4);
-            willRequest.setRecipientId(resultSet.getString(5));
 
-            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + resultSet.getString(2) + ";";
+            String creatorId = resultSet.getString(2);
+            String recipientId = resultSet.getString(5);
+
+
+            UserModelDTO creator = new UserModelDTO();
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + creatorId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            willRequest.setEmail(resultSet.getString("email"));
-            willRequest.setDid(resultSet.getString("did"));
-            String kycId = resultSet.getString("kyc_id");
+            creator.setId(creatorId);
+            creator.setEmail(resultSet.getString("email"));
+            creator.setDid(resultSet.getString("did"));
+            String creatorKycId = resultSet.getString("kyc_id");
 
-            query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + kycId + ";";
+            query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + creatorKycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            willRequest.setFirstName(resultSet.getString(2));
-            willRequest.setMiddleName(resultSet.getString(3));
-            willRequest.setLastName(resultSet.getString(4));
-            willRequest.setAddress(resultSet.getString(5));
-            willRequest.setPassportId(resultSet.getString(6));
+            creator.setFirstName(resultSet.getString(2));
+            creator.setMiddleName(resultSet.getString(3));
+            creator.setLastName(resultSet.getString(4));
+            creator.setAddress(resultSet.getString(5));
+            creator.setPassportNumber(resultSet.getString(6));
+
+            willRequest.setCreator(creator);
+
+            UserModelDTO recipient = new UserModelDTO();
+            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + recipientId + ";";
+            resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            recipient.setId(recipientId);
+            recipient.setEmail(resultSet.getString("email"));
+            recipient.setDid(resultSet.getString("did"));
+            String recipientKycId = resultSet.getString("kyc_id");
+
+            query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + recipientKycId + ";";
+            resultSet = connect().createStatement().executeQuery(query);
+            resultSet.next();
+            recipient.setFirstName(resultSet.getString(2));
+            recipient.setMiddleName(resultSet.getString(3));
+            recipient.setLastName(resultSet.getString(4));
+            recipient.setAddress(resultSet.getString(5));
+            recipient.setPassportNumber(resultSet.getString(6));
+
+            willRequest.setRecipient(recipient);
 
             query = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id=" + documentId + ";";
             resultSet = connect().createStatement().executeQuery(query);
@@ -326,7 +352,7 @@ public class SQLDatabaseConnection {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        return new WillRequestDTO();
+        return null;
     }
 
     public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException {
@@ -508,7 +534,7 @@ public class SQLDatabaseConnection {
                 String email = resultSet.getString(2);
                 String kycId = resultSet.getString("kyc_id");
                 resultSet.close();
-                return new UserModelDTO(email, getUserKyc(kycId));
+                return new UserModelDTO(userId, email, getUserKyc(kycId));
             } else {
                 throw new UserNotFoundException("No user was found for this userId -> " + userId);
             }
