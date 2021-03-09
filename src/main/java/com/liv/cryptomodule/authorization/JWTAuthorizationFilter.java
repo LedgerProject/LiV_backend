@@ -43,10 +43,12 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
         if (token != null) {
             // parse the token.
-            String user = JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
+            String user = JWT.require(Algorithm.HMAC512(SECRET))
+                    .withIssuer("LiV Portal")
+                    .withAudience("LiV Portal")
                     .build()
                     .verify(token.replace(TOKEN_PREFIX, ""))
-                    .getSubject();
+                    .getClaim("email").asString();
 
             if (user != null) {
                 // new arraylist means authorities

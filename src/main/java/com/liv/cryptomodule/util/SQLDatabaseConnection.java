@@ -39,6 +39,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.liv.cryptomodule.util.SecurityConstants.SECRET;
+
 //TODO: Remove unused methods and maybe split into several classes
 public class SQLDatabaseConnection {
 
@@ -691,7 +693,7 @@ public class SQLDatabaseConnection {
                     .withClaim("account_type_id", accountTypeId)
                     .withClaim("user_id", ID)
                     .withClaim("email", user.getEmail())
-                    .sign(Algorithm.HMAC256(secret));
+                    .sign(Algorithm.HMAC512(SECRET));
         } catch (JWTCreationException e) {
             e.printStackTrace();
         }
