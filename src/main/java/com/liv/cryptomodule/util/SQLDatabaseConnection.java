@@ -372,12 +372,12 @@ public class SQLDatabaseConnection {
                 break;
             case 1:
                 query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
-                query.append("public_key=").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
+                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
                 ).append("did=\"").append(did).append("\",");
                 break;
             case 2:
                 query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
-                query.append("public_key=").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
+                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
                 ).append("did=\"").append(did).append("\",");
                 break;
             default:
