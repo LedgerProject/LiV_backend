@@ -371,13 +371,9 @@ public class SQLDatabaseConnection {
                 query.append(prop.getProperty(USER_TABLE)).append(" SET ");
                 break;
             case 1:
-                query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
-                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
-                ).append("did=\"").append(did).append("\",");
-                break;
             case 2:
-                query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
-                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
+                query.append(prop.getProperty(USER_TABLE)).append(" SET ");
+                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("\","
                 ).append("did=\"").append(did).append("\",");
                 break;
             default:
@@ -393,7 +389,8 @@ public class SQLDatabaseConnection {
 
         executeUpdateToDB(query.toString());
 
-        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
+//        'kyc_id',
+        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "(first_name, middle_name, last_name, address, passport_number) VALUES (\"\", \"\", \"\", \"\", \"\");";
 
         executeUpdateToDB(queryKyc);
 
@@ -402,7 +399,7 @@ public class SQLDatabaseConnection {
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(kycQuery);
             resultSet.next();
-            String assignKyc = "UPDATE 'users' SET 'kyc_id' = '" + resultSet.getString(1) + "' WHERE 'users' = " + getUserId(user.getEmail());
+            String assignKyc = "UPDATE users SET kyc_id = " + resultSet.getString(1) + " WHERE user_id = " + getUserId(user.getEmail());
             executeUpdateToDB(assignKyc);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
