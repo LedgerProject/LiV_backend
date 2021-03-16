@@ -635,12 +635,12 @@ public class SQLDatabaseConnection {
     public static String login(UserLoginDTO user) throws IOException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
-            String query = "SELECT user_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
+            String query = "SELECT user_id, role_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
             try (Connection connection = connect()) {
                 ResultSet resultSet = connection.createStatement().executeQuery(query);
                 resultSet.next();
-                String jwt = generateJWT(user, resultSet.getString(1), "0");
+                String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
                 resultSet.close();
                 return jwt;
             } catch (SQLException | IOException | ClassNotFoundException e) {
