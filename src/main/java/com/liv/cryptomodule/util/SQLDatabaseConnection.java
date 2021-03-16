@@ -685,7 +685,7 @@ public class SQLDatabaseConnection {
                     .withAudience("LiV Portal")
                     .withIssuedAt(new Date())
                     .withNotBefore(new Date())
-                    .withClaim("account_type_id", accountTypeId)
+                    .withClaim("role", accountTypeId)
                     .withClaim("user_id", ID)
                     .withClaim("email", user.getEmail())
                     .sign(Algorithm.HMAC256(secret));
