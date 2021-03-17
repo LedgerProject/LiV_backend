@@ -203,11 +203,11 @@ public class SQLDatabaseConnection {
                 FilterDTO filterDTO = pageAndFilterDTO.getFilterDto();
                 StringBuilder sb = new StringBuilder(query);
                 sb.deleteCharAt(query.length() - 1);
-                if (filterDTO.getAccountId() != null && !filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getAccountId() != null && !filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().matches("-?\\d+")) {
                     sb.append(" WHERE user_id = ").append(filterDTO.getAccountId());
                 }
 
-                if (filterDTO.getRecipientId() != null && !filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getRecipientId() != null && !filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().matches("-?\\d+")) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("recipient_id = ").append(filterDTO.getRecipientId());
                     } else {
@@ -215,7 +215,7 @@ public class SQLDatabaseConnection {
                     }
                 }
 
-                if (filterDTO.getStatus() != null && !filterDTO.getStatus().isEmpty() && filterDTO.getStatus().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getStatus() != null && !filterDTO.getStatus().isEmpty() && filterDTO.getStatus().matches("-?\\d+")) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("status_id = ").append(filterDTO.getStatus());
                     } else {
@@ -267,6 +267,9 @@ public class SQLDatabaseConnection {
             throwables.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        }
+        finally {
+
         }
         return new ArrayList<>();
     }
@@ -732,6 +735,10 @@ public class SQLDatabaseConnection {
 
         String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id =" + willId + ";";
         try (Connection connection = connect()) {
+
+            String statusQuery = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = 3 WHERE request_id =" + willId + ";";
+            executeUpdateToDB(statusQuery);
+
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             String creatorId = resultSet.getString(2);
@@ -772,5 +779,20 @@ public class SQLDatabaseConnection {
         } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    public static void confirmDeath(String willId) throws IOException {
+
+        loadProps();
+
+        try (Connection connection = connect()) {
+            String statusQuery = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = 2 WHERE request_id =" + willId + ";";
+            executeUpdateToDB(statusQuery);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 }
