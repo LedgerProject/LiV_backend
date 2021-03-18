@@ -205,11 +205,11 @@ public class SQLDatabaseConnection {
                 FilterDTO filterDTO = pageAndFilterDTO.getFilterDto();
                 StringBuilder sb = new StringBuilder(query);
                 sb.deleteCharAt(query.length() - 1);
-                if (filterDTO.getAccountId() != null && !filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getAccountId() != null && !filterDTO.getAccountId().isEmpty() && filterDTO.getAccountId().matches("-?\\d+")) {
                     sb.append(" WHERE user_id = ").append(filterDTO.getAccountId());
                 }
 
-                if (filterDTO.getRecipientId() != null && !filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getRecipientId() != null && !filterDTO.getRecipientId().isEmpty() && filterDTO.getRecipientId().matches("-?\\d+")) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("recipient_id = ").append(filterDTO.getRecipientId());
                     } else {
@@ -217,7 +217,7 @@ public class SQLDatabaseConnection {
                     }
                 }
 
-                if (filterDTO.getStatus() != null && !filterDTO.getStatus().isEmpty() && filterDTO.getStatus().chars().allMatch(Character::isDigit)) {
+                if (filterDTO.getStatus() != null && !filterDTO.getStatus().isEmpty() && filterDTO.getStatus().matches("-?\\d+")) {
                     if (sb.toString().contains("WHERE")) {
                         sb.append(" AND ").append("status_id = ").append(filterDTO.getStatus());
                     } else {
@@ -269,6 +269,9 @@ public class SQLDatabaseConnection {
             throwables.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        }
+        finally {
+
         }
         return new ArrayList<>();
     }
@@ -373,13 +376,9 @@ public class SQLDatabaseConnection {
                 query.append(prop.getProperty(USER_TABLE)).append(" SET ");
                 break;
             case 1:
-                query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
-                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
-                ).append("did=\"").append(did).append("\",");
-                break;
             case 2:
-                query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
-                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
+                query.append(prop.getProperty(USER_TABLE)).append(" SET ");
+                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("\","
                 ).append("did=\"").append(did).append("\",");
                 break;
             default:
@@ -395,7 +394,8 @@ public class SQLDatabaseConnection {
 
         executeUpdateToDB(query.toString());
 
-        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "('kyc_id', 'first_name', 'middle_name', 'last_name', 'address', 'passport_number') VALUES (NULL, NULL, NULL, NULL, NULL, NULL);";
+//        'kyc_id',
+        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "(first_name, middle_name, last_name, address, passport_number) VALUES (\"\", \"\", \"\", \"\", \"\");";
 
         executeUpdateToDB(queryKyc);
 
@@ -404,7 +404,7 @@ public class SQLDatabaseConnection {
         try (Connection connection = connect()) {
             ResultSet resultSet = connection.createStatement().executeQuery(kycQuery);
             resultSet.next();
-            String assignKyc = "UPDATE 'users' SET 'kyc_id' = '" + resultSet.getString(1) + "' WHERE 'users' = " + getUserId(user.getEmail());
+            String assignKyc = "UPDATE users SET kyc_id = " + resultSet.getString(1) + " WHERE user_id = " + getUserId(user.getEmail());
             executeUpdateToDB(assignKyc);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -640,12 +640,12 @@ public class SQLDatabaseConnection {
     public static String login(UserLoginDTO user) throws IOException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
-            String query = "SELECT user_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
+            String query = "SELECT user_id, role_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
             try (Connection connection = connect()) {
                 ResultSet resultSet = connection.createStatement().executeQuery(query);
                 resultSet.next();
-                String jwt = generateJWT(user, resultSet.getString(1), "0");
+                String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
                 resultSet.close();
                 return jwt;
             } catch (SQLException | IOException | ClassNotFoundException e) {
@@ -690,7 +690,7 @@ public class SQLDatabaseConnection {
                     .withAudience("LiV Portal")
                     .withIssuedAt(new Date())
                     .withNotBefore(new Date())
-                    .withClaim("account_type_id", accountTypeId)
+                    .withClaim("role", accountTypeId)
                     .withClaim("user_id", ID)
                     .withClaim("email", user.getEmail())
                     .sign(Algorithm.HMAC512(SECRET));
@@ -716,7 +716,7 @@ public class SQLDatabaseConnection {
                 e.printStackTrace();
             }
             json
-                    .put("account_type_id", jwt.getClaim("account_type_id").asString())
+                    .put("role", jwt.getClaim("role").asString())
                     .put("user_id", jwt.getClaim("user_id").asString())
                     .put("email", jwt.getClaim("email").asString());
             String JWTClaimsJSON = json.toString();
@@ -737,6 +737,10 @@ public class SQLDatabaseConnection {
 
         String query = "SELECT * FROM " + prop.getProperty(REQUESTS_TABLE) + " WHERE request_id =" + willId + ";";
         try (Connection connection = connect()) {
+
+            String statusQuery = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = 3 WHERE request_id =" + willId + ";";
+            executeUpdateToDB(statusQuery);
+
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             String creatorId = resultSet.getString(2);
@@ -777,5 +781,20 @@ public class SQLDatabaseConnection {
         } catch (SQLException | ClassNotFoundException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    public static void confirmDeath(String willId) throws IOException {
+
+        loadProps();
+
+        try (Connection connection = connect()) {
+            String statusQuery = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = 2 WHERE request_id =" + willId + ";";
+            executeUpdateToDB(statusQuery);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 }

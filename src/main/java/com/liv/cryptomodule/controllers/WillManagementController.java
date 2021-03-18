@@ -81,7 +81,11 @@ public class WillManagementController {
     // TODO: 15.02.2021 /notify get id will
 
     @GetMapping("/notify/{willRequest:.+}")
-    public void sendTestEmail(@PathVariable String willRequest) throws IOException, IllegalStateException {
+    public void confirmDeath(@PathVariable String willRequest) throws IOException {
+        SQLDatabaseConnection.confirmDeath(willRequest);
+    }
+    @GetMapping("/release/{willRequest:.+}")
+    public void releaseWill(@PathVariable String willRequest) throws IOException, IllegalStateException {
         SQLDatabaseConnection.sendNotification(willRequest);
     }
 }
