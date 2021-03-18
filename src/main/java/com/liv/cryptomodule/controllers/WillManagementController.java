@@ -35,14 +35,14 @@ public class WillManagementController {
         FilterDTO filterDTO = null;
         PageAndFilterDTO pageAndFilterDTO = null;
 
-        if(pageOrder != null || pageLimit != null){
+        if (pageOrder != null || pageLimit != null) {
             pageDTO = new PageDTO(
                     pageOrder,
                     pageLimit
             );
         }
 
-        if(ownerId != null || status != null || recipientId != null){
+        if (ownerId != null || status != null || recipientId != null) {
             filterDTO = new FilterDTO(
                     ownerId,
                     status,
@@ -50,7 +50,7 @@ public class WillManagementController {
             );
         }
 
-        if(pageDTO != null || filterDTO != null){
+        if (pageDTO != null || filterDTO != null) {
             pageAndFilterDTO = new PageAndFilterDTO(
                     pageDTO,
                     filterDTO
