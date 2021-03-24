@@ -3,6 +3,7 @@
 ## Built with
 * [Java 11](https://www.java.com/en/)
 * [Spring Boot 2.4.0](https://spring.io/)
+* [Kotlin 1.3](https://kotlinlang.org)
 * [Quorum](https://consensys.net/quorum/)
 
 ## Software used
@@ -13,6 +14,9 @@
 
 ## Dependencies
 * spring-boot-starter-web: Spring Boot components for building web applications
+* kotlin-stdlib-jdk8: Kotlin SDK for DTOs
+* kotlin-reflect: runtime API for Kotlin reflection
+* jackson-module-kotlin: serialization/deserialization of Kotlin
 * spring-boot-devtools: additional development tools
 * spring-boot-starter-test: Spring Boot components for running application tests
 * okhttp: HTTP client
@@ -21,15 +25,24 @@
 * maven-compiler-plugin: Apache Maven plugin
 * java-jwt: library for generation and verification of JSON Web Tokens
 * mysql-connector-java: library for working with MySQL database
+* javax.servlet-api: API for Java servlets
+* springdoc-openapi-ui: visual API documentation
+* unirest-java: lightweight HTTP client library
+* spring-boot-starter-mail: email sending library
+* thymeleaf-layout-dialect: template builder for emails
 
 ## Directory structure
 * contracts: directory with Solidity smart contracts
 * src/main: Java source code
-    * java/com/liv/cryptomodule: application codebase
-        * controllers: REST API controllers
-        * dto: Data Transfer Objects
-        * util: utility classes for connectivity and configurations
-    * resources/META-INF: application auto-configuration
+   * java/com/liv/cryptomodule: application codebase
+      * controllers: REST API controllers
+      * dto: Data Transfer Objects
+      * exception: exception classes
+      * payload: classes that implement payload
+      * property: properties for file storage
+      * service: Spring services that implement email and file related features
+      * util: utility classes for connectivity and configurations
+   * resources/META-INF: application auto-configuration
     
 ## Starting a development environment
 ## Prerequisities
