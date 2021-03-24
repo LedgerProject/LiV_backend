@@ -2,14 +2,13 @@ package com.liv.cryptomodule.controllers;
 
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.*;
-import com.liv.cryptomodule.payload.UploadFileResponse;
 import com.liv.cryptomodule.service.FileStorageService;
 import com.liv.cryptomodule.util.DSM;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -57,19 +56,13 @@ public class UserManagementController {
     }
 
     @RequestMapping(value = "/addKYC", method = RequestMethod.POST, consumes = {"multipart/form-data"})
-    public UploadFileResponse addKYC(@RequestPart("firstName") String firstName, @RequestPart("middleName") String middleName,
-                                     @RequestPart("lastName") String lastName, @RequestPart("passportID") String passportId, @RequestPart("email") String email,
-                                     @RequestPart("file") MultipartFile file)
+    public ResponseEntity<String> addKYC(@RequestPart("email") String email, @RequestPart("first_name") String firstName,@RequestPart("middle_name") String middleName,
+                                     @RequestPart("last_name") String lastName, @RequestPart("address") String address,
+                                     @RequestPart("passport_number") String passportId)
             throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        KycDTO kyc = new KycDTO(firstName, middleName, lastName, passportId, email);
-        String fileName = fileStorageService.storeFile(file);
-        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/downloadFile/")
-                .path(fileName)
-                .toUriString();
-        SQLDatabaseConnection.addKYC(kyc, fileDownloadUri);
-        return new UploadFileResponse(fileName, fileDownloadUri,
-                file.getContentType(), file.getSize());
+        KycDTO kyc = new KycDTO(firstName, middleName, lastName, address, passportId, email);
+        SQLDatabaseConnection.addKYC(kyc);
+        return new ResponseEntity<String>("Success", HttpStatus.OK);
     }
 
     @GetMapping("/{userId:.+}")

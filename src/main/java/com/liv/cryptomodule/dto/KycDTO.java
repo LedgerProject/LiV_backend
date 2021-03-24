@@ -12,14 +12,6 @@ public class KycDTO {
     public KycDTO() {
     }
 
-    public KycDTO(String firstName, String middleName, String lastName, String address, String passportID) {
-        this.firstName = firstName;
-        this.middleName = middleName;
-        this.lastName = lastName;
-        this.passportID = passportID;
-        this.address = address;
-    }
-
     public KycDTO(String firstName, String middleName, String lastName, String address, String passportID, String email) {
         this.firstName = firstName;
         this.middleName = middleName;
@@ -27,6 +19,14 @@ public class KycDTO {
         this.passportID = passportID;
         this.address = address;
         this.email = email;
+    }
+
+    public KycDTO(String firstName, String middleName, String lastName, String address, String passportID) {
+        this.firstName = firstName;
+        this.middleName = middleName;
+        this.lastName = lastName;
+        this.passportID = passportID;
+        this.address = address;
     }
 
     public String getFirstName() {
@@ -53,4 +53,7 @@ public class KycDTO {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
 }

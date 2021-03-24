@@ -28,9 +28,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -374,9 +372,13 @@ public class SQLDatabaseConnection {
                 query.append(prop.getProperty(USER_TABLE)).append(" SET ");
                 break;
             case 1:
+                query.append(prop.getProperty(NOTARY_TABLE)).append(" SET ");
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
+                ).append("did=\"").append(did).append("\",");
+                break;
             case 2:
-                query.append(prop.getProperty(USER_TABLE)).append(" SET ");
-                query.append("public_key=\"").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append("\","
+                query.append(prop.getProperty(REGISTRY_TABLE)).append(" SET ");
+                query.append("public_key").append(DSM.encodePK(DSM.generateKeyPair(user.getPassword().getBytes(StandardCharsets.UTF_8)).getPublic())).append(","
                 ).append("did=\"").append(did).append("\",");
                 break;
             default:
@@ -500,26 +502,34 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(setQuery);
     }
 
-    public static String addKYC(KycDTO kyc, String filePath) throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    public static void addKYC(KycDTO kyc) throws IOException {
         loadProps();
-        String fileHash = DSM.SHA256hex(filePath + "." + DSM.generateSalt());
-        String userPassword = getUserPassword(kyc.getEmail());
-        SignatureDTO signature = DSM.sign(fileHash, userPassword);
-        System.out.println(BIM.storeEventHash(fileHash, signature.getPK(), signature.getSignatureValue()));
-        String documentId = BIM.mintDocumentToken();
-        String query = "INSERT INTO " + prop.getProperty(KYC_TABLE) + " SET " +
-                "user_id=\"" + getUserId(kyc.getEmail()) + "\","
+
+        String query = "UPDATE " + prop.getProperty(KYC_TABLE) + " SET "
                 + "first_name=\"" + kyc.getFirstName() + "\","
                 + "middle_name=\"" + kyc.getMiddleName() + "\","
                 + "last_name=\"" + kyc.getLastName() + "\","
-                + "passport_id=\"" + kyc.getPassportID() + "\","
-                + "email=\"" + kyc.getEmail() + "\","
-                + "document_id=\"" + documentId + "\","
-                + "file_hash=\"" + fileHash + "\","
-                + "file_path=\"" + filePath + "\";";
+                + "address=\"" + kyc.getAddress() + "\","
+                + "passport_number=\"" + kyc.getPassportID() + "\""
+                + " WHERE kyc_id=" + getKYCId(getUserId(kyc.getEmail())) + ";";
         System.out.println("Executing query: " + query);
         executeUpdateToDB(query);
-        return documentId;
+    }
+
+    private static String getKYCId(String userId) throws IOException {
+        loadProps();
+        String query = "SELECT kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id = " + userId + ";";
+        try (Connection connection = connect()) {
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            resultSet.next();
+            return resultSet.getString(1);
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static UserModelDTO getUser(String userId) throws IOException, UserNotFoundException, KycNotFoundException {
