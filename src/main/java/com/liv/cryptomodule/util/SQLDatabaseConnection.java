@@ -82,13 +82,15 @@ public class SQLDatabaseConnection {
     //TODO: Refactor recipient_id check
     public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
         loadProps();
+        //  Update requests tbl query
+        String requestsUpdate = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = -3 WHERE user_id = " + senderId + ";";
+
         String latestKycId, latestDocumentId;
 
         String senderQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id= " + senderId + ";";
         String recipientQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + recipientEmail + "\";";
 
         try (Connection connection = connect()) {
-
             System.out.println("Executing query: " + senderQuery);
             ResultSet resultSet = connection.createStatement().executeQuery(senderQuery);
             if (resultSet.next()) {
@@ -113,7 +115,14 @@ public class SQLDatabaseConnection {
 
         String query = "SELECT document_id FROM " + prop.getProperty(DOCS_TABLE) + " ORDER BY document_id DESC LIMIT 1";
         try (Connection connection = connect()) {
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            //  upd requests tbl exec; 
+            log.info("Executing query: " + requestsUpdate);
+            ResultSet resultSet = connection.createStatement().executeQuery(requestsUpdate);
+            if(!resultSet.isClosed())
+                //  don't need any processing; just close
+                resultSet.close();
+
+            resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
 
