@@ -373,11 +373,36 @@ public class SQLDatabaseConnection {
         String table;
 
         loadProps();
-
+        //  Check draft user record
+        Boolean draftMode = false;
+        try (Connection connection = connect()) {
+            String draftTestQuery = "SELECT password_hash FROM " + prop.getProperty(USER_TABLE) + " WHERE email = '"
+                    + user.getEmail() + "';";
+            ResultSet resultSet = connection.createStatement().executeQuery(draftTestQuery);
+            if (resultSet.next()){
+                //  user exists
+                String passwdHash = resultSet.getString(0);
+                if (passwdHash == null){
+                    draftMode = true;
+                }
+            } else {
+                // user not found - ok
+            }
+            resultSet.close();
+        } catch (SQLException | IOException e) {
+            log.severe(e.getMessage());
+            throw e;
+        } catch ( ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         Salt salt = saltPassword(user.getPassword());
 
-        StringBuilder query = new StringBuilder("INSERT INTO ");
-
+        StringBuilder query = new StringBuilder();
+        if (!draftMode) {
+            query.append("INSERT INTO ");
+        } else {
+            query.append("UPDATE ");
+        }
         int roleId = Integer.parseInt(user.getRole());
 
         switch (roleId) {
@@ -401,7 +426,14 @@ public class SQLDatabaseConnection {
         query.append(" email=\"" + user.getEmail() + "\","
                 + "password_hash=\"" + salt.getSaltedPassword() + "\","
                 + "salt=\"" + salt.getSalt() + "\","
-                + "role_id=" + roleId + ";");
+                + "role_id=" + roleId);
+
+        if (draftMode) {
+            query.append(" WHERE email = '" + user.getEmail() + "';");
+        } else {
+            query.append(";");
+        }
+
 
         log.log(Level.INFO, "Executing query {0}", query.toString());
 
