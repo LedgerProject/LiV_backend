@@ -826,7 +826,9 @@ public class SQLDatabaseConnection {
                                         recipientLastName,
                                         documentUrl
                                 )
-                        ));
+                        ),
+                        // TODO Generate pdf and provide it's content
+                        null);
             } catch (NullPointerException e) {
                 throw new IllegalStateException("JSON payload structure is incorrect");
             }

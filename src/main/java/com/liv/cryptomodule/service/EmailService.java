@@ -6,6 +6,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.util.ByteArrayDataSource;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -41,7 +43,7 @@ public class EmailService {
 
     }
 
-    public static Boolean sendEmail(String to, String from, String subject, String text) throws IOException{
+    public static Boolean sendEmail(String to, String from, String subject, String text, byte[] pdfBytes) throws IOException{
         loadProps();
 
         if (mail == null) {
@@ -60,7 +62,9 @@ public class EmailService {
             helper.setTo(recepientsArray);
             helper.setSubject(subject);
             helper.setText(text, true);
-
+            if(pdfBytes != null){
+                helper.addAttachment("document.pdf", new ByteArrayDataSource(pdfBytes, "application/pdf"));
+            }
             mail.send(message);
 
             log.log(Level.INFO, "Mail sent to: {0}", to);
