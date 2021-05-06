@@ -381,7 +381,7 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(draftTestQuery);
             if (resultSet.next()){
                 //  user exists
-                String passwdHash = resultSet.getString(0);
+                String passwdHash = resultSet.getString(1);
                 if (passwdHash == null){
                     draftMode = true;
                 }
