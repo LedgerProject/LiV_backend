@@ -88,4 +88,8 @@ public class WillManagementController {
     public void releaseWill(@PathVariable String willRequest) throws IOException, IllegalStateException {
         SQLDatabaseConnection.sendNotification(willRequest);
     }
+    @DeleteMapping("/delete/{willRequest:.+}")
+    public void deleteWill(@PathVariable String willRequest) throws IOException, IllegalStateException {
+        SQLDatabaseConnection.deleteWill(willRequest);
+    }
 }

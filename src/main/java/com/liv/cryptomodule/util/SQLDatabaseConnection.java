@@ -852,4 +852,11 @@ public class SQLDatabaseConnection {
         }
 
     }
+
+    public static void deleteWill(String willId) throws IOException {
+        loadProps();
+        String query = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id=-3 WHERE request_id=" + willId + ";";
+        log.log(Level.INFO, "Executing query {0}", query);
+        executeUpdateToDB(query);
+    }
 }
