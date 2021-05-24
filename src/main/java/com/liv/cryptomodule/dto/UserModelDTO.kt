@@ -5,18 +5,20 @@ data class UserModelDTO(
         var email: String = "",
         var did: String? = "",
         var firstName: String = "",
-        var middleName: String = "",
         var lastName: String = "",
+        var secondName: String = "",
         var address: String = "",
-        var passportNumber: String = ""
+        var nif: String = "",
+        var birthday: String = ""
 ) {
     constructor(id: String, email: String, kycDTO: KycDTO) : this(
             id = id,
             email = email,
             firstName = kycDTO.firstName,
-            middleName = kycDTO.middleName,
             lastName = kycDTO.lastName,
+            secondName = kycDTO.secondName,
             address = kycDTO.address,
-            passportNumber = kycDTO.passportID
+            nif = kycDTO.nif,
+            birthday = kycDTO.birthday
     )
 }

@@ -278,8 +278,7 @@ public class SQLDatabaseConnection {
             throwables.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        }
-        finally {
+        } finally {
 
         }
         return new ArrayList<>();
@@ -326,11 +325,12 @@ public class SQLDatabaseConnection {
             query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + creatorKycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            creator.setFirstName(resultSet.getString(2));
-            creator.setMiddleName(resultSet.getString(3));
-            creator.setLastName(resultSet.getString(4));
-            creator.setAddress(resultSet.getString(5));
-            creator.setPassportNumber(resultSet.getString(6));
+            creator.setFirstName(resultSet.getString("first_name"));
+            creator.setLastName(resultSet.getString("last_name"));
+            creator.setSecondName(resultSet.getString("second_name"));
+            creator.setAddress(resultSet.getString("address"));
+            creator.setNif(resultSet.getString("nif"));
+            creator.setBirthday(resultSet.getString("birthday"));
 
             willRequest.setCreator(creator);
 
@@ -346,11 +346,12 @@ public class SQLDatabaseConnection {
             query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + recipientKycId + ";";
             resultSet = connect().createStatement().executeQuery(query);
             resultSet.next();
-            recipient.setFirstName(resultSet.getString(2));
-            recipient.setMiddleName(resultSet.getString(3));
-            recipient.setLastName(resultSet.getString(4));
-            recipient.setAddress(resultSet.getString(5));
-            recipient.setPassportNumber(resultSet.getString(6));
+            recipient.setFirstName(resultSet.getString("first_name"));
+            recipient.setLastName(resultSet.getString("last_name"));
+            recipient.setSecondName(resultSet.getString("second_name"));
+            recipient.setAddress(resultSet.getString("address"));
+            recipient.setNif(resultSet.getString("nif"));
+            recipient.setBirthday(resultSet.getString("birthday"));
 
             willRequest.setRecipient(recipient);
 
@@ -369,7 +370,7 @@ public class SQLDatabaseConnection {
         return null;
     }
 
-    public static void createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException {
+    public static String createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException {
         String table;
 
         loadProps();
@@ -440,7 +441,7 @@ public class SQLDatabaseConnection {
         executeUpdateToDB(query.toString());
 
 //        'kyc_id',
-        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "(first_name, middle_name, last_name, address, passport_number) VALUES (\"\", \"\", \"\", \"\", \"\");";
+        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "(first_name, last_name, second_name, address, nif, birthday) VALUES (\"\", \"\", \"\", \"\", \"\", \"\");";
 
         executeUpdateToDB(queryKyc);
 
@@ -455,6 +456,7 @@ public class SQLDatabaseConnection {
             e.printStackTrace();
         }
 
+        return getUserId(user.getEmail());
 
     }
 
@@ -552,11 +554,27 @@ public class SQLDatabaseConnection {
 
         String query = "UPDATE " + prop.getProperty(KYC_TABLE) + " SET "
                 + "first_name=\"" + kyc.getFirstName() + "\","
-                + "middle_name=\"" + kyc.getMiddleName() + "\","
                 + "last_name=\"" + kyc.getLastName() + "\","
+                + "second_name=\"" + kyc.getSecondName() + "\","
                 + "address=\"" + kyc.getAddress() + "\","
-                + "passport_number=\"" + kyc.getPassportID() + "\""
+                + "nif=\"" + kyc.getNif() + "\","
+                + "birthday=\"" + kyc.getBirthday() + "\""
                 + " WHERE kyc_id=" + getKYCId(getUserId(kyc.getEmail())) + ";";
+        System.out.println("Executing query: " + query);
+        executeUpdateToDB(query);
+    }
+
+    public static void storeQuestions(QuestionsDTO questionsDTO) throws IOException {
+        loadProps();
+
+        String query = "INSERT INTO " + prop.getProperty("questionstable") + " SET "
+                + "user_id=\"" + getUserId(questionsDTO.getEmail()) + "\","
+                + "q1=\"" + questionsDTO.getQ1() + "\","
+                + "q1_18y=\"" + questionsDTO.getQ1_18() + "\","
+                + "q2=\"" + questionsDTO.getQ2() + "\","
+                + "q3=\"" + questionsDTO.getQ3() + "\","
+                + "q4=\"" + questionsDTO.getQ4() + "\","
+                + "q5=\"" + questionsDTO.getQ5() + "\";";
         System.out.println("Executing query: " + query);
         executeUpdateToDB(query);
     }
@@ -614,16 +632,19 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             if (resultSet.next()) {
                 String first_name = resultSet.getString("first_name");
-                String middle_name = resultSet.getString("middle_name");
                 String last_name = resultSet.getString("last_name");
+                String second_name = resultSet.getString("second_name");
                 String address = resultSet.getString("address");
-                String passport_number = resultSet.getString("passport_number");
+                String nif = resultSet.getString("nif");
+                String birthday = resultSet.getString("birthday");
                 resultSet.close();
                 return new KycDTO(first_name,
-                        middle_name,
                         last_name,
+                        second_name,
                         address,
-                        passport_number);
+                        nif,
+                        birthday
+                );
             } else {
                 throw new KycNotFoundException("No user was found for this userId -> " + kycId);
             }

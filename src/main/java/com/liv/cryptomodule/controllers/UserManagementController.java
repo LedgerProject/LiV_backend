@@ -25,13 +25,28 @@ public class UserManagementController {
     private FileStorageService fileStorageService;
 
     @PostMapping("/signup")
-    public void signup(@RequestBody UserRegistrationDTO user)
-            throws IOException, InvalidKeyException, NoSuchAlgorithmException, SignatureException, SQLException, InvalidRoleIdException {
+    public String signup(@RequestBody UserRegistrationDTO user) {
         // To validate that someone created an account just concatenate their name and email and hash it
-        SignatureDTO signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
-//TODO: Redeploy the smart contract for storing event hashes
+        SignatureDTO signed = null;
+        try {
+            signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
+            return SQLDatabaseConnection.createUser(user, signed.getMessageHash());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } catch (InvalidRoleIdException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //TODO: Redeploy the smart contract for storing event hashes
 //        String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
-        SQLDatabaseConnection.createUser(user, signed.getMessageHash());
+        return null;
     }
 
     @PostMapping("/login")
@@ -56,13 +71,24 @@ public class UserManagementController {
     }
 
     @RequestMapping(value = "/addKYC", method = RequestMethod.POST, consumes = {"multipart/form-data"})
-    public ResponseEntity<String> addKYC(@RequestPart("email") String email, @RequestPart("first_name") String firstName,@RequestPart("middle_name") String middleName,
-                                     @RequestPart("last_name") String lastName, @RequestPart("address") String address,
-                                     @RequestPart("passport_number") String passportId)
+    public ResponseEntity<String> addKYC(@RequestPart("email") String email, @RequestPart("first_name") String firstName,
+                                         @RequestPart("last_name") String lastName, @RequestPart("second_name") String secondName,
+                                         @RequestPart("address") String address, @RequestPart("nif") String nif,
+                                         @RequestPart("birthday") String birthday)
             throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        KycDTO kyc = new KycDTO(firstName, middleName, lastName, address, passportId, email);
+        KycDTO kyc = new KycDTO(firstName, lastName, secondName, address, nif, birthday, email);
         SQLDatabaseConnection.addKYC(kyc);
         return new ResponseEntity<String>("Success", HttpStatus.OK);
+    }
+
+    @PostMapping("/storeQuestions")
+    public boolean storeQuestions(@RequestBody QuestionsDTO questionsDTO) {
+        try {
+            SQLDatabaseConnection.storeQuestions(questionsDTO);
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 
     @GetMapping("/{userId:.+}")
