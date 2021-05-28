@@ -26,6 +26,7 @@ public class UserManagementController {
 
     @PostMapping("/signup")
     public String signup(@RequestBody UserRegistrationDTO user) {
+        System.out.println("Received payload: " + user.toString());
         // To validate that someone created an account just concatenate their name and email and hash it
         SignatureDTO signed = null;
         try {
@@ -46,7 +47,7 @@ public class UserManagementController {
         }
         //TODO: Redeploy the smart contract for storing event hashes
 //        String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
-        return null;
+        return "error";
     }
 
     @PostMapping("/login")
@@ -77,6 +78,7 @@ public class UserManagementController {
                                          @RequestPart("birthday") String birthday)
             throws IOException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         KycDTO kyc = new KycDTO(firstName, lastName, secondName, address, nif, birthday, email);
+        System.out.println("Received payload: " + kyc.toString());
         SQLDatabaseConnection.addKYC(kyc);
         return new ResponseEntity<String>("Success", HttpStatus.OK);
     }

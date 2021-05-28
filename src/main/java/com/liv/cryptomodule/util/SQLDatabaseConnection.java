@@ -121,12 +121,9 @@ public class SQLDatabaseConnection {
         try (Connection connection = connect()) {
             //  upd requests tbl exec; 
             log.info("Executing query: " + requestsUpdate);
-            ResultSet resultSet = connection.createStatement().executeQuery(requestsUpdate);
-            if(!resultSet.isClosed())
-                //  don't need any processing; just close
-                resultSet.close();
+            connection.createStatement().executeUpdate(requestsUpdate);
 
-            resultSet = connection.createStatement().executeQuery(query);
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
 
@@ -701,6 +698,7 @@ public class SQLDatabaseConnection {
             if (resultSet.next()) {
                 String userId = resultSet.getString(1);
                 resultSet.close();
+                System.out.println("User id -> " + userId);
                 return userId;
             } else {
                 throw new UserNotFoundException("There is no such user");
