@@ -51,12 +51,21 @@ public class UserManagementController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody UserLoginDTO user) throws IOException, LoginException {
-        String jwt = SQLDatabaseConnection.login(user);
+    public ResponseEntity<String> login(@RequestBody UserLoginDTO user) {
+        String jwt = null;
+        try {
+            jwt = SQLDatabaseConnection.login(user);
+        } catch (IOException e) {
+            return new ResponseEntity<>("Could not retrieve data", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (SQLException throwables) {
+            return new ResponseEntity<>("Some database queries are incorrect", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ClassNotFoundException e) {
+            return new ResponseEntity<>("Database driver not found", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         if (jwt != null) {
-            return jwt;
+            return new ResponseEntity<>(jwt, HttpStatus.OK);
         } else {
-            throw new LoginException("Credentials invalid!");
+            return new ResponseEntity<>("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
     }
 

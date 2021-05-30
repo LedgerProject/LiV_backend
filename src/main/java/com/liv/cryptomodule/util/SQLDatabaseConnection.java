@@ -103,7 +103,7 @@ public class SQLDatabaseConnection {
                 resultSet.close();
             } else {
                 log.info("No user was found for this email -> " + recipientEmail + "; Creating.");
-                String draftUserInsertQuery = "INSERT INTO " + prop.getProperty(USER_TABLE) + " (email) VALUES ('"+recipientEmail+"');";
+                String draftUserInsertQuery = "INSERT INTO " + prop.getProperty(USER_TABLE) + " (email) VALUES ('" + recipientEmail + "');";
                 resultSet = connection.createStatement().executeQuery(draftUserInsertQuery);
                 resultSet.close();
                 // throw new UserNotFoundException("No user was found for this email -> " + recipientEmail);
@@ -377,10 +377,10 @@ public class SQLDatabaseConnection {
             String draftTestQuery = "SELECT password_hash FROM " + prop.getProperty(USER_TABLE) + " WHERE email = '"
                     + user.getEmail() + "';";
             ResultSet resultSet = connection.createStatement().executeQuery(draftTestQuery);
-            if (resultSet.next()){
+            if (resultSet.next()) {
                 //  user exists
                 String passwdHash = resultSet.getString(1);
-                if (passwdHash == null){
+                if (passwdHash == null) {
                     draftMode = true;
                 }
             } else {
@@ -390,7 +390,7 @@ public class SQLDatabaseConnection {
         } catch (SQLException | IOException e) {
             log.severe(e.getMessage());
             throw e;
-        } catch ( ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         Salt salt = saltPassword(user.getPassword());
@@ -709,20 +709,18 @@ public class SQLDatabaseConnection {
         return null;
     }
 
-    public static String login(UserLoginDTO user) throws IOException {
+    public static String login(UserLoginDTO user) throws IOException, SQLException, ClassNotFoundException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
             String query = "SELECT user_id, role_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
-            try (Connection connection = connect()) {
-                ResultSet resultSet = connection.createStatement().executeQuery(query);
-                resultSet.next();
-                String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
-                resultSet.close();
-                return jwt;
-            } catch (SQLException | IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+            Connection connection = connect();
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            resultSet.next();
+            String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
+            resultSet.close();
+            return jwt;
+
         }
         return null;
     }
