@@ -65,7 +65,7 @@ public class UserManagementController {
         if (jwt != null) {
             return new ResponseEntity<>(jwt, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>("Invalid credentials", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>("Invalid credentials", HttpStatus.FORBIDDEN);
         }
     }
 
