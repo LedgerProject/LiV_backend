@@ -96,13 +96,13 @@ public class SQLDatabaseConnection {
             if (resultSet.next()) {
                 resultSet.close();
             } else {
-                throw new UserNotFoundException("No user was found for this userId -> " + senderId);
+                throw new UserNotFoundException("No sender user was found for this userId -> " + senderId);
             }
             resultSet = connection.createStatement().executeQuery(recipientQuery);
             if (resultSet.next()) {
                 resultSet.close();
             } else {
-                log.info("No user was found for this email -> " + recipientEmail + "; Creating.");
+                log.info("No recipient user was found for this email -> " + recipientEmail + "; Creating.");
                 String draftUserInsertQuery = "INSERT INTO " + prop.getProperty(USER_TABLE) + " (email) VALUES ('" + recipientEmail + "');";
                 resultSet = connection.createStatement().executeQuery(draftUserInsertQuery);
                 resultSet.close();
