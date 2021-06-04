@@ -87,8 +87,14 @@ public class SQLDatabaseConnection {
 
         String latestKycId, latestDocumentId;
 
+        String[] recipientsEmailList = recipientEmail.split(", ");
+
         String senderQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id= " + senderId + ";";
-        String recipientQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + recipientEmail + "\";";
+        ArrayList<String> recipientQueryList = new ArrayList<>();
+
+        for (String email : recipientsEmailList) {
+            recipientQueryList.add("SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + email + "\";");
+        }
 
         try (Connection connection = connect()) {
             System.out.println("Executing query: " + senderQuery);
@@ -98,15 +104,32 @@ public class SQLDatabaseConnection {
             } else {
                 throw new UserNotFoundException("No sender user was found for this userId -> " + senderId);
             }
-            resultSet = connection.createStatement().executeQuery(recipientQuery);
-            if (resultSet.next()) {
-                resultSet.close();
-            } else {
-                log.info("No recipient user was found for this email -> " + recipientEmail + "; Creating.");
-                String draftUserInsertQuery = "INSERT INTO " + prop.getProperty(USER_TABLE) + " (email) VALUES ('" + recipientEmail + "');";
-                resultSet = connection.createStatement().executeQuery(draftUserInsertQuery);
-                resultSet.close();
-                // throw new UserNotFoundException("No user was found for this email -> " + recipientEmail);
+            for (String email : recipientQueryList) {
+                resultSet = connection.createStatement().executeQuery(email);
+                if (resultSet.next()) {
+                    resultSet.close();
+                } else {
+                    for (String emailAddress : recipientsEmailList) {
+                        log.info("No recipient user was found for this email -> " + emailAddress + "; Creating.");
+                        String draftUserInsertQuery = "INSERT INTO " + prop.getProperty(USER_TABLE) + " (email) VALUES ('" + emailAddress + "');";
+                        connection.createStatement().executeUpdate(draftUserInsertQuery);
+
+                        String queryKyc = "INSERT INTO " + prop.getProperty(KYC_TABLE) + "(first_name, last_name, second_name, address, nif, birthday) VALUES (\"\", \"\", \"\", \"\", \"\", \"\");";
+
+                        executeUpdateToDB(queryKyc);
+
+                        String kycQuery = "SELECT kyc_id FROM kyc ORDER BY kyc_id DESC";
+
+                        ResultSet kycResultSet = connection.createStatement().executeQuery(kycQuery);
+                        kycResultSet.next();
+                        String assignKyc = "UPDATE users SET kyc_id = " + kycResultSet.getString(1) + " WHERE user_id = " + getUserId(emailAddress);
+                        executeUpdateToDB(assignKyc);
+
+
+                        resultSet.close();
+                    }
+                    // throw new UserNotFoundException("No user was found for this email -> " + recipientEmail);
+                }
             }
         } catch (SQLException | ClassNotFoundException | UserNotFoundException e) {
             e.printStackTrace();
@@ -127,11 +150,15 @@ public class SQLDatabaseConnection {
             resultSet.next();
             latestDocumentId = resultSet.getString(1);
 
-            String recipientId = SQLDatabaseConnection.getUserId(recipientEmail);
+            StringBuilder recipientIdList = new StringBuilder();
+            for (String email : recipientsEmailList) {
+                recipientIdList.append(SQLDatabaseConnection.getUserId(email)).append(", ");
+            }
+            recipientIdList.delete(recipientIdList.toString().length() - 2, recipientIdList.toString().length() - 1);
 
             query = "INSERT INTO " + prop.getProperty(REQUESTS_TABLE) + " SET user_id=" + senderId + ","
                     + "status_id=0, document_id=" + latestDocumentId
-                    + ", recipient_id=" + recipientId + ";";
+                    + ", recipient_id=" + "\"" + recipientIdList.toString() + "\"" + ";";
             log.log(Level.INFO, "Executing query {0}", query);
             executeUpdateToDB(query);
             return 0;
@@ -307,7 +334,7 @@ public class SQLDatabaseConnection {
             String documentId = resultSet.getString(4);
 
             String creatorId = resultSet.getString(2);
-            String recipientId = resultSet.getString(5);
+            String[] recipientIdList = resultSet.getString(5).split(", ");
 
 
             UserModelDTO creator = new UserModelDTO();
@@ -331,26 +358,32 @@ public class SQLDatabaseConnection {
 
             willRequest.setCreator(creator);
 
-            UserModelDTO recipient = new UserModelDTO();
-            query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + recipientId + ";";
-            resultSet = connect().createStatement().executeQuery(query);
-            resultSet.next();
-            recipient.setId(recipientId);
-            recipient.setEmail(resultSet.getString("email"));
-            recipient.setDid(resultSet.getString("did"));
-            String recipientKycId = resultSet.getString("kyc_id");
+            ArrayList<UserModelDTO> recipientModelList = new ArrayList<>();
+            for (String id : recipientIdList) {
+                UserModelDTO recipient = new UserModelDTO();
+                query = "SELECT email, did, kyc_id FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id=" + id + ";";
+                resultSet = connect().createStatement().executeQuery(query);
+                if (resultSet.next()) {
+                    recipient.setId(id);
+                    recipient.setEmail(resultSet.getString("email"));
+                    recipient.setDid(resultSet.getString("did"));
+                    String recipientKycId = resultSet.getString("kyc_id");
 
-            query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + recipientKycId + ";";
-            resultSet = connect().createStatement().executeQuery(query);
-            resultSet.next();
-            recipient.setFirstName(resultSet.getString("first_name"));
-            recipient.setLastName(resultSet.getString("last_name"));
-            recipient.setSecondName(resultSet.getString("second_name"));
-            recipient.setAddress(resultSet.getString("address"));
-            recipient.setNif(resultSet.getString("nif"));
-            recipient.setBirthday(resultSet.getString("birthday"));
+                    query = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id=" + recipientKycId + ";";
+                    resultSet = connect().createStatement().executeQuery(query);
+                    if (resultSet.next()) {
+                        recipient.setFirstName(resultSet.getString("first_name"));
+                        recipient.setLastName(resultSet.getString("last_name"));
+                        recipient.setSecondName(resultSet.getString("second_name"));
+                        recipient.setAddress(resultSet.getString("address"));
+                        recipient.setNif(resultSet.getString("nif"));
+                        recipient.setBirthday(resultSet.getString("birthday"));
 
-            willRequest.setRecipient(recipient);
+                        recipientModelList.add(recipient);
+                    }
+                }
+            }
+            willRequest.setRecipient(recipientModelList);
 
             query = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id=" + documentId + ";";
             resultSet = connect().createStatement().executeQuery(query);
@@ -714,12 +747,15 @@ public class SQLDatabaseConnection {
         if (isEmailExists(user) && isPasswordValid(user)) {
             String query = "SELECT user_id, role_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";
             System.out.println("Executing query: " + query);
-            Connection connection = connect();
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
-            resultSet.next();
-            String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
-            resultSet.close();
-            return jwt;
+            try(Connection connection = connect()) {
+                ResultSet resultSet = connection.createStatement().executeQuery(query);
+                resultSet.next();
+                String jwt = generateJWT(user, resultSet.getString(1), resultSet.getString(2));
+                resultSet.close();
+                return jwt;
+            }catch (Exception e){
+                throw e;
+            }
 
         }
         return null;
@@ -799,9 +835,8 @@ public class SQLDatabaseConnection {
     public static void sendNotification(String willId) throws IOException {
         loadProps();
 
-        String recipientEmail;
-        String recipientFirstName;
-        String recipientLastName;
+        StringBuilder recipientEmail = new StringBuilder();
+        ArrayList<RecipientEmailDTO> recipientEmailDTOList = new ArrayList<>();
         String documentId;
         String documentUrl;
 
@@ -817,35 +852,47 @@ public class SQLDatabaseConnection {
             documentId = resultSet.getString(2);
             String recipientId = resultSet.getString(5);
 
-            String userQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id =" + recipientId + ";";
-            resultSet = connection.createStatement().executeQuery(userQuery);
-            resultSet.next();
-            recipientEmail = resultSet.getString(2);
-            String kycId = resultSet.getString(6);
+            String[] recipientIdList = recipientId.split(", ");
 
-            String kycQuery = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id =" + kycId + ";";
-            resultSet = connection.createStatement().executeQuery(kycQuery);
-            resultSet.next();
-            recipientFirstName = resultSet.getString(2);
-            recipientLastName = resultSet.getString(4);
+            resultSet.close();
+            for (String id : recipientIdList) {
+                RecipientEmailDTO recipientEmailDTO = new RecipientEmailDTO();
+                String userQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id =" + id + ";";
+                resultSet = connection.createStatement().executeQuery(userQuery);
+                resultSet.next();
+                recipientEmail.append(resultSet.getString(2)).append(",");
+                String kycId = resultSet.getString(6);
+
+                String kycQuery = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id =" + kycId + ";";
+                resultSet = connection.createStatement().executeQuery(kycQuery);
+                resultSet.next();
+                recipientEmailDTO.setRecipientFirstName(resultSet.getString(2));
+                recipientEmailDTO.setRecipientLastName(resultSet.getString(4));
+                recipientEmailDTOList.add(recipientEmailDTO);
+                resultSet.close();
+            }
 
             String docQuery = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id =" + documentId + ";";
             resultSet = connection.createStatement().executeQuery(docQuery);
             resultSet.next();
             documentUrl = resultSet.getString(3);
+            resultSet.close();
 
             try {
-                EmailService.sendEmail(recipientEmail, "kostyanich7@gmail.com",
-                        "TestSubject", MailContentBuilder.generateMailContent(
-                                new EmailPayload("Test Mail",
-                                        "kostiantyn.nechvolod@gmail.com",
-                                        recipientFirstName,
-                                        recipientLastName,
-                                        documentUrl
-                                )
-                        ),
-                        // TODO Generate pdf and provide it's content
-                        null);
+                recipientEmail.delete(recipientEmail.toString().length() - 2, recipientEmail.toString().length() - 1);
+                for (RecipientEmailDTO dto : recipientEmailDTOList) {
+                    EmailService.sendEmail(recipientEmail.toString(), "kostyanich7@gmail.com",
+                            "TestSubject", MailContentBuilder.generateMailContent(
+                                    new EmailPayload("Test Mail",
+                                            "kostiantyn.nechvolod@gmail.com",
+                                            dto.getRecipientFirstName(),
+                                            dto.getRecipientLastName(),
+                                            documentUrl
+                                    )
+                            ),
+                            // TODO Generate pdf and provide it's content
+                            null);
+                }
             } catch (NullPointerException e) {
                 throw new IllegalStateException("JSON payload structure is incorrect");
             }

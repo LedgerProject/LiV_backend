@@ -6,5 +6,5 @@ data class WillRequestResponseDTO(
         var documentHash: String = "",
         var documentLink: String = "",
         var creator: UserModelDTO? = null,
-        var recipient: UserModelDTO? = null
+        var recipient: ArrayList<UserModelDTO>? = null
 )
