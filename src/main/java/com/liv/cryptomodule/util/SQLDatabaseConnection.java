@@ -8,10 +8,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liv.cryptomodule.dto.*;
-import com.liv.cryptomodule.exception.InvalidRoleIdException;
-import com.liv.cryptomodule.exception.KycNotFoundException;
-import com.liv.cryptomodule.exception.UserNotFoundException;
-import com.liv.cryptomodule.exception.WrongPageOrderException;
+import com.liv.cryptomodule.exception.*;
 import com.liv.cryptomodule.payload.EmailPayload;
 import com.liv.cryptomodule.service.EmailService;
 import com.liv.cryptomodule.service.MailContentBuilder;
@@ -400,7 +397,7 @@ public class SQLDatabaseConnection {
         return null;
     }
 
-    public static String createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException {
+    public static String createUser(UserRegistrationDTO user, String did) throws SQLException, IOException, InvalidRoleIdException, NoSuchAlgorithmException, UserExistsException {
         String table;
 
         loadProps();
@@ -415,6 +412,8 @@ public class SQLDatabaseConnection {
                 String passwdHash = resultSet.getString(1);
                 if (passwdHash == null) {
                     draftMode = true;
+                }else{
+                    throw new UserExistsException("User with this email already exists");
                 }
             } else {
                 // user not found - ok

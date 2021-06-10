@@ -25,29 +25,36 @@ public class UserManagementController {
     private FileStorageService fileStorageService;
 
     @PostMapping("/signup")
-    public String signup(@RequestBody UserRegistrationDTO user) {
+    public ResponseEntity<String> signup(@RequestBody UserRegistrationDTO user) {
         System.out.println("Received payload: " + user.toString());
         // To validate that someone created an account just concatenate their name and email and hash it
         SignatureDTO signed = null;
         try {
             signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
-            return SQLDatabaseConnection.createUser(user, signed.getMessageHash());
+            return new ResponseEntity<>(SQLDatabaseConnection.createUser(user, signed.getMessageHash()), HttpStatus.OK);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch(UserExistsException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+        }
+        catch (InvalidKeyException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (SignatureException e) {
             e.printStackTrace();
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
+            return new ResponseEntity<>(throwables.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (InvalidRoleIdException e) {
             e.printStackTrace();
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (IOException e) {
             e.printStackTrace();
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         //TODO: Redeploy the smart contract for storing event hashes
 //        String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
-        return "error";
     }
 
     @PostMapping("/login")
