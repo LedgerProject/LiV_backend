@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
@@ -77,7 +78,7 @@ public class SQLDatabaseConnection {
 
     //TODO: Add check of whether sender_id is in the database
     //TODO: Refactor recipient_id check
-    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
+    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException, IPFSException {
         loadProps();
         //  Update requests tbl query
         String requestsUpdate = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = -3 WHERE user_id = " + senderId + ";";
@@ -165,7 +166,7 @@ public class SQLDatabaseConnection {
         return 1;
     }
 
-    private static void saveDocumentToIpfs(MultipartFile file) throws IOException {
+    private static void saveDocumentToIpfs(MultipartFile file) throws IOException, IPFSException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
 
@@ -183,16 +184,18 @@ public class SQLDatabaseConnection {
                 .url(IPFS_BASE_URL + ADD_FILE_ENDPOINT)
                 .post(multipartBody)
                 .build();
-        Response response = client.newCall(request).execute();
+        try {
+            Response response = client.newCall(request).execute();
+            String resp = response.body().string();
 
+            System.out.println(resp);
+            ObjectMapper objectMapper = new ObjectMapper();
+            IpsfResponse ipsfResponse = objectMapper.readValue(resp, IpsfResponse.class);
 
-        String resp = response.body().string();
-
-        System.out.println(resp);
-        ObjectMapper objectMapper = new ObjectMapper();
-        IpsfResponse ipsfResponse = objectMapper.readValue(resp, IpsfResponse.class);
-
-        addDocumentToDb(ipsfResponse.getHash());
+            addDocumentToDb(ipsfResponse.getHash());
+        } catch (ConnectException e) {
+            throw new IPFSException("Could not connect to IPFS node");
+        }
     }
 
     private static void addDocumentToDb(String ipfsDocumentHash) throws IOException {
@@ -520,7 +523,7 @@ public class SQLDatabaseConnection {
         }
     }
 
-    public static boolean isPasswordValid(UserLoginDTO user) throws IOException {
+    public static boolean isPasswordValid(UserLoginDTO user) throws IOException, UserNotFoundException {
 
         loadProps();
 
@@ -533,6 +536,9 @@ public class SQLDatabaseConnection {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
             String dbPassword = resultSet.getString(1);
+            if (dbPassword == null) {
+                throw new UserNotFoundException("Such user does not exist!");
+            }
             String salt = resultSet.getString(2);
             String saltedPassword = user.getPassword() + "." + salt;
             String saltedPasswordHash = DSM.SHA256hex(saltedPassword);
@@ -540,6 +546,7 @@ public class SQLDatabaseConnection {
             if (dbPassword.equals(saltedPasswordHash)) {
                 return true;
             }
+            //TODO: This needs refactoring
         } catch (SQLException | IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -741,7 +748,7 @@ public class SQLDatabaseConnection {
         return null;
     }
 
-    public static String login(UserLoginDTO user) throws IOException, SQLException, ClassNotFoundException {
+    public static String login(UserLoginDTO user) throws IOException, SQLException, ClassNotFoundException, UserNotFoundException {
         loadProps();
         if (isEmailExists(user) && isPasswordValid(user)) {
             String query = "SELECT user_id, role_id FROM " + prop.getProperty(USER_TABLE) + " WHERE email=\"" + user.getEmail() + "\";";

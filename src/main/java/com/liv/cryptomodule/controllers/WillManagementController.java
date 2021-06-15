@@ -1,10 +1,13 @@
 package com.liv.cryptomodule.controllers;
 
 import com.liv.cryptomodule.dto.*;
+import com.liv.cryptomodule.exception.IPFSException;
 import com.liv.cryptomodule.exception.UserNotFoundException;
 import com.liv.cryptomodule.exception.WrongPageOrderException;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,8 +22,14 @@ import java.util.List;
 public class WillManagementController {
 
     @PostMapping(value = "/create", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public int createWill(@RequestPart(value = "sender_id", required = true) String senderId, @RequestPart(value = "recipient_email", required = true) String recipientEmail, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
-        return SQLDatabaseConnection.createWill(senderId, recipientEmail, file);
+    public ResponseEntity<String> createWill(@RequestPart(value = "sender_id", required = true) String senderId, @RequestPart(value = "recipient_email", required = true) String recipientEmail, @RequestPart(value = "file", required = true) MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException {
+        try {
+            SQLDatabaseConnection.createWill(senderId, recipientEmail, file);
+            return new ResponseEntity<>("Will created", HttpStatus.OK);
+        } catch (IPFSException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Could not connect to IPFS node", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping(value = "/")

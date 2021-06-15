@@ -2,7 +2,6 @@ package com.liv.cryptomodule.controllers;
 
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.*;
-import com.liv.cryptomodule.service.FileStorageService;
 import com.liv.cryptomodule.util.DSM;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +19,6 @@ import java.sql.SQLException;
 @CrossOrigin(origins = "*")
 @RequestMapping(value = "/users")
 public class UserManagementController {
-
-    @Autowired
-    private FileStorageService fileStorageService;
 
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@RequestBody UserRegistrationDTO user) {
@@ -68,6 +64,8 @@ public class UserManagementController {
             return new ResponseEntity<>("Some database queries are incorrect", HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (ClassNotFoundException e) {
             return new ResponseEntity<>("Database driver not found", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (UserNotFoundException e) {
+            return new ResponseEntity<>("Such user not found", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         if (jwt != null) {
             return new ResponseEntity<>(jwt, HttpStatus.OK);
