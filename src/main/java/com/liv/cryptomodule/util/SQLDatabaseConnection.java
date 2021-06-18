@@ -860,9 +860,9 @@ public class SQLDatabaseConnection {
 
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             resultSet.next();
-            String creatorId = resultSet.getString(2);
-            documentId = resultSet.getString(2);
-            String recipientId = resultSet.getString(5);
+            String creatorId = resultSet.getString("user_id");
+            documentId = resultSet.getString("document_id");
+            String recipientId = resultSet.getString("recipient_id");
 
             String[] recipientIdList = recipientId.split(", ");
 
@@ -872,14 +872,14 @@ public class SQLDatabaseConnection {
                 String userQuery = "SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE user_id =" + id + ";";
                 resultSet = connection.createStatement().executeQuery(userQuery);
                 resultSet.next();
-                recipientEmail.append(resultSet.getString(2)).append(",");
-                String kycId = resultSet.getString(6);
+                recipientEmail.append(resultSet.getString("email")).append(",");
+                String kycId = resultSet.getString("kyc_id");
 
                 String kycQuery = "SELECT * FROM " + prop.getProperty(KYC_TABLE) + " WHERE kyc_id =" + kycId + ";";
                 resultSet = connection.createStatement().executeQuery(kycQuery);
                 resultSet.next();
-                recipientEmailDTO.setRecipientFirstName(resultSet.getString(2));
-                recipientEmailDTO.setRecipientLastName(resultSet.getString(4));
+                recipientEmailDTO.setRecipientFirstName(resultSet.getString("first_name"));
+                recipientEmailDTO.setRecipientLastName(resultSet.getString("last_name"));
                 recipientEmailDTOList.add(recipientEmailDTO);
                 resultSet.close();
             }
@@ -887,16 +887,16 @@ public class SQLDatabaseConnection {
             String docQuery = "SELECT * FROM " + prop.getProperty(DOCS_TABLE) + " WHERE document_id =" + documentId + ";";
             resultSet = connection.createStatement().executeQuery(docQuery);
             resultSet.next();
-            documentUrl = resultSet.getString(3);
+            documentUrl = resultSet.getString("path");
             resultSet.close();
 
             try {
-                recipientEmail.delete(recipientEmail.toString().length() - 2, recipientEmail.toString().length() - 1);
+                recipientEmail.delete(recipientEmail.toString().length() - 1, recipientEmail.toString().length());
                 for (RecipientEmailDTO dto : recipientEmailDTOList) {
-                    EmailService.sendEmail(recipientEmail.toString(), "kostyanich7@gmail.com",
-                            "TestSubject", MailContentBuilder.generateMailContent(
-                                    new EmailPayload("Test Mail",
-                                            "kostiantyn.nechvolod@gmail.com",
+                    EmailService.sendEmail(recipientEmail.toString(), "info@livpoc.com",
+                            "Notification From LiV", MailContentBuilder.generateMailContent(
+                                    new EmailPayload("Notification from LiV Portal",
+                                            recipientEmail.toString(),
                                             dto.getRecipientFirstName(),
                                             dto.getRecipientLastName(),
                                             documentUrl

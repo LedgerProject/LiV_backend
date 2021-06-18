@@ -1410,7 +1410,8 @@ body.outlook p {
                                                     <table>
                                                         <tr>
                                                             <th><img
-                                                                    src="https://mercury-tfs.com/wp-content/uploads/2018/07/LOGO_OK.png">
+                                                                    src="https://github.com/LedgerProject/LiV_frontend_2.0/blob/main/static/branding/logo.png?raw=true"
+                                                            style="width: 50px">
                                                             </th>
                                                         </tr>
                                                     </table>
@@ -1419,7 +1420,7 @@ body.outlook p {
                                                     <table>
                                                         <tr>
                                                             <th>
-                                                                <p class="text-right">LIV</p>
+                                                                <p class="text-right">LIV Portal</p>
                                                             </th>
                                                         </tr>
                                                     </table>
@@ -1452,51 +1453,14 @@ body.outlook p {
                                         <table>
                                             <tr>
                                                 <th>
-                                                    <h1>Dear <span th:text="${bankName}">{{bank_name}}</span>,</h1>
-                                                    <p class="lead"> Foreing Trade Department.</p>
-                                                    <p>It is in our interest to inform you that this is a notification,
-                                                        indicating that have been sent you by Blockchain way the
-                                                        documents, belonging to the transaction of our reference <b
-                                                                th:text="${bankReference}">{{bank_reference}}</b> and
-                                                        your's reference <b th:text="${customerReference}">{{customer_reference}}</b>
-                                                        of the event <b th:text="${productEvent}">{{product_event}}</b>
-                                                        and sequence number <b th:text="${negotiationSequence}">{{negotiation_sequence}}</b>
-                                                        ; for the amount of <b th:text="${currency}">{{currency}}</b> <b
-                                                                th:text="${amount}">{{amount}}</b>.</p>
-                                                    <table class="callout">
-                                                        <tr>
-                                                            <th class="callout-inner secondary">
-                                                                <table class="row">
-                                                                    <tbody>
-                                                                    <tr>
-                                                                        <th class="small-12 large-6 columns first"
-                                                                            style="padding-bottom: 0px;">
-                                                                            <table>
-                                                                                <tr>
-                                                                                    <th>
-                                                                                        <p><strong>Beneficiary:</strong><br>
-                                                                                            <span th:text="${beneficiary}">{{beneficiary_name}}</span>
-                                                                                        </p>
-                                                                                        <p>
-                                                                                            <strong>Aplicant:</strong><br>
-                                                                                            <span th:text="${applicant}">{{applicant_name}}</span>
-                                                                                        </p>
-                                                                                    </th>
-                                                                                </tr>
-                                                                            </table>
-                                                                        </th>
-                                                                    </tr>
-                                                                    </tbody>
-                                                                </table>
-                                                            </th>
-                                                            <th class="expander"></th>
-                                                        </tr>
-                                                    </table>
-                                                    <p>The documents sent are detailed below:</p>
-                                                    <p th:text="${documentTypeList}">{{document_type_list}}</p>
-
-                                                    <p>Yours faithfully,<br><span th:text="${principalBankName}">{{principal_bank_name}}</span>
-                                                    </p>
+                                                    <h1>Hello <span th:text="${recepientFirstName}">{{recepientFirstName}}</span><span> </span><span th:text="${recepientLastName}">{{recepientLastName}}</span>,</h1>
+                                                    <p class="lead"> LiV Portal</p>
+                                                    <p>We are getting in touch with you from <a href="https://platform.livpoc.com/">LiV</a>.</p>
+                                                    <p>We know you are living a very difficult time currently and we are here to help you through these times.</p>
+                                                    <p>Your close person trusted LiV to share with you their Will and we are currently doing so as per their wishes.</p>
+                                                    <p><a th:href="${documentLink}">View the Will</a></p>
+                                                    <p>With all affection and support,</p>
+                                                    <p>LiV</p>
                                                 </th>
                                             </tr>
                                         </table>
