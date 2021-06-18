@@ -97,8 +97,8 @@ public class SQLDatabaseConnection {
             recipientQueryList.add("SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + email + "\";");
         }
 
-        SignatureDTO signed = DSM.sign(Arrays.toString(file.getBytes()), "DKJAIWE19KDJXNIE92J88");
-        BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
+//        SignatureDTO signed = DSM.sign(Arrays.toString(file.getBytes()), "DKJAIWE19KDJXNIE92J88");
+//        BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
 
         try (Connection connection = connect()) {
             System.out.println("Executing query: " + senderQuery);

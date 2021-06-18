@@ -28,8 +28,8 @@ public class UserManagementController {
         SignatureDTO signed = null;
         try {
             signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
-            String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
-            return new ResponseEntity<>(SQLDatabaseConnection.createUser(user, did), HttpStatus.OK);
+//            String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
+            return new ResponseEntity<>(SQLDatabaseConnection.createUser(user, signed.getPK()), HttpStatus.OK);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
