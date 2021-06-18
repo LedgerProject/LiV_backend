@@ -2,6 +2,7 @@ package com.liv.cryptomodule.controllers;
 
 import com.liv.cryptomodule.dto.*;
 import com.liv.cryptomodule.exception.*;
+import com.liv.cryptomodule.util.BIM;
 import com.liv.cryptomodule.util.DSM;
 import com.liv.cryptomodule.util.SQLDatabaseConnection;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,8 @@ public class UserManagementController {
         SignatureDTO signed = null;
         try {
             signed = DSM.sign(user.getEmail().toLowerCase(), user.getPassword());
-            return new ResponseEntity<>(SQLDatabaseConnection.createUser(user, signed.getMessageHash()), HttpStatus.OK);
+            String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
+            return new ResponseEntity<>(SQLDatabaseConnection.createUser(user, did), HttpStatus.OK);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -49,8 +51,6 @@ public class UserManagementController {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        //TODO: Redeploy the smart contract for storing event hashes
-//        String did = BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
     }
 
     @PostMapping("/login")

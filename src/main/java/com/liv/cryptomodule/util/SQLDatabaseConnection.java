@@ -26,7 +26,10 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -78,7 +81,7 @@ public class SQLDatabaseConnection {
 
     //TODO: Add check of whether sender_id is in the database
     //TODO: Refactor recipient_id check
-    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException, IPFSException {
+    public static int createWill(String senderId, String recipientEmail, MultipartFile file) throws IOException, UserNotFoundException, SQLException, ClassNotFoundException, IPFSException, NoSuchAlgorithmException, SignatureException, InvalidKeyException {
         loadProps();
         //  Update requests tbl query
         String requestsUpdate = "UPDATE " + prop.getProperty(REQUESTS_TABLE) + " SET status_id = -3 WHERE user_id = " + senderId + ";";
@@ -93,6 +96,9 @@ public class SQLDatabaseConnection {
         for (String email : recipientsEmailList) {
             recipientQueryList.add("SELECT * FROM " + prop.getProperty(USER_TABLE) + " WHERE email= " + "\"" + email + "\";");
         }
+
+        SignatureDTO signed = DSM.sign(Arrays.toString(file.getBytes()), "DKJAIWE19KDJXNIE92J88");
+        BIM.storeEventHash(signed.getMessageHash(), signed.getPK(), signed.getSignatureValue());
 
         try (Connection connection = connect()) {
             System.out.println("Executing query: " + senderQuery);

@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +33,10 @@ public class WillManagementController {
         } catch (IPFSException e) {
             e.printStackTrace();
             return new ResponseEntity<>("Could not connect to IPFS node", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NoSuchAlgorithmException | SignatureException e) {
+            return new ResponseEntity<>("Could not sign the request", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (InvalidKeyException e) {
+            return new ResponseEntity<>("Signature key is invalid", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
